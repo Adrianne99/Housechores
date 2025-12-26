@@ -4,49 +4,25 @@ import { Button } from "../../components/Buttons";
 import { AppContext } from "../../context/app_context";
 import axios from "axios";
 import { useNavigate } from "react-router";
+import useOtpInput from "../../hooks/use_otp_input";
 
 const Email_verification = () => {
   axios.defaults.withCredentials = true;
   const { BACKEND_URL, isLoggedIn, userData, getUserData } =
     useContext(AppContext);
-  const input_refs = useRef([]);
+
+  const OTP_LENGTH = 6;
+
   const navigate = useNavigate();
 
-  const handleInput = (e, index) => {
-    e.target.value = e.target.value.replace(/[^0-9]/g, "").slice(0, 1);
-
-    if (e.target.value.length > 0 && index < input_refs.current.length - 1) {
-      input_refs.current[index + 1].focus();
-    }
-  };
-
-  const handleKeyDown = (e, index) => {
-    if (e.key === "Backspace" && e.target.value.length === 0 && index > 0) {
-      input_refs.current[index - 1].focus();
-    }
-  };
-
-  const handlePaste = (e) => {
-    const paste = e.clipboardData.getData("text");
-    const pasteArray = paste.split("");
-    pasteArray.forEach((char, index) => {
-      if (input_refs.current[index]) {
-        input_refs.current[index].value = char;
-      }
-
-      if (paste.length && input_refs.current[index + 1]) {
-        input_refs.current[index].focus();
-      }
-    });
-  };
+  const { inputRefs, handleInput, handleKeyDown, handlePaste } = useOtpInput(6);
 
   const onSubmitHandler = async (e) => {
     axios.defaults.withCredentials = true;
-
     try {
       e.preventDefault();
 
-      const otp_array = input_refs.current.map((e) => e?.value || "");
+      const otp_array = inputRefs.current.map((e) => e?.value || "");
       const otp = otp_array.join("");
       const { data } = await axios.post(
         BACKEND_URL + "/api/auth/verify-account",
@@ -64,7 +40,7 @@ const Email_verification = () => {
   };
 
   useEffect(() => {
-    isLoggedIn && userData?.verified && navigate("/dashboard");
+    isLoggedIn && userData.is_account_verified && navigate("/dashboard");
   }, [isLoggedIn, userData]);
 
   return (
@@ -93,7 +69,7 @@ const Email_verification = () => {
                     key={index}
                     maxLength={1}
                     required
-                    ref={(e) => (input_refs.current[index] = e)}
+                    ref={(e) => (inputRefs.current[index] = e)}
                     onInput={(e) => handleInput(e, index)}
                     onKeyDown={(e) => handleKeyDown(e, index)}
                     className="size-12  text-white text-center border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"

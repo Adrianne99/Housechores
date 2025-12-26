@@ -1,7 +1,7 @@
 // Classes for Button Variants
 const buttonVariantClasses = {
   primary:
-    "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 focus:ring-indigo-300",
+    " bg-gradient-to-br from-primary via-second-gradient to-third-gradient hover:to-indigo-200 active:scale-[0.98] text-white border-indigo-600 focus:ring-indigo-300",
   secondary:
     "bg-white hover:bg-gray-50 text-gray-700 border-gray-300 focus:ring-gray-300",
   danger:
@@ -14,12 +14,9 @@ const buttonVariantClasses = {
 const buttonSizeClasses = {
   sm: "px-3 py-1 text-sm",
   md: "px-4 py-2 text-base",
-  lg: "px-6 py-3 text-lg",
+  lg: "px-6 lg:px-8 py-2.5 text-base",
 };
 
-/**
- * Reusable Button Component.
- */
 export const Button = ({
   variant = "primary",
   size = "md",
@@ -29,14 +26,17 @@ export const Button = ({
   ...props
 }) => {
   const baseClasses = `
-    font-semibold
-    rounded-full 
-    transition duration-150 ease-in-out
-    focus:outline-none focus:ring-4 focus:ring-opacity-50
-    border
-    shadow-sm
-    inline-flex items-center justify-center
-  `;
+  font-medium
+  cursor-pointer
+  rounded-full
+  inline-flex items-center justify-center
+   shadow-sm
+  transition-all duration-200 ease-in-out
+ 
+  font-inter
+  focus:outline-none
+  focus:ring-4 focus:ring-indigo-300/40
+`;
 
   const variantStyle = buttonVariantClasses[variant];
   const sizeStyle = buttonSizeClasses[size];
@@ -45,13 +45,9 @@ export const Button = ({
     ? "opacity-50 cursor-not-allowed pointer-events-none"
     : "active:scale-[0.98]";
 
-  const classes = [
-    baseClasses,
-    variantStyle,
-    sizeStyle,
-    disabledClasses,
-    className,
-  ].join(" ");
+  const classes = [baseClasses, variantStyle, sizeStyle, disabledClasses].join(
+    " "
+  );
 
   return (
     <button className={classes} disabled={disabled} {...props}>

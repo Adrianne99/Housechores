@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { H2, H3, H6, Paragraph } from "../../components/texts";
 import { LuUserRound, LuMail, LuLock } from "react-icons/lu";
 import { Button } from "../../components/Buttons";
@@ -14,6 +14,10 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const navigate = useNavigate();
+
+  const { BACKEND_URL, setIsLoggedIn } = useContext(AppContext);
+
   const emailError =
     isSubmitted && !/\S+@\S+\.\S+/.test(email)
       ? "Please enter a valid email address."
@@ -24,52 +28,40 @@ const Register = () => {
       : "";
 
   const confirmPasswordError =
-    isSubmitted && password !== confirmPassword
+    confirmPassword && password !== confirmPassword
       ? "Passwords do not match."
       : "";
 
-  const isFormInvalid =
-    !!emailError || !!passwordError || !email || !password || !name;
-
-  const navigate = useNavigate();
-
-  const { BACKEND_URL, setIsLoggedIn } = useContext(AppContext);
-
-  const send_verification_otp = async () => {
-    try {
-      axios.defaults.withCredentials = true;
-      const { data } = await axios.post(
-        `${BACKEND_URL}/api/auth/send-verification-otp`,
-        { otp }
-      );
-
-      if (data.success) {
-        navigate("/verify-account");
-        alert(data.success);
-      } else {
-        alert(data.error.message);
-      }
-    } catch (error) {
-      console.log(error.message);
-    }
-  };
+  const isFormValid =
+    !!emailError ||
+    !!passwordError ||
+    !!confirmPasswordError ||
+    !email ||
+    !password ||
+    !name;
 
   const handleSubmit = async (e) => {
     try {
       e.preventDefault();
       setIsSubmitted(true);
-      console.log("Form submitted");
-      send_verification_otp();
+
+      if (isFormValid) {
+        return;
+      }
+
+      console.log(isFormValid);
 
       const { data } = await axios.post(`${BACKEND_URL}/api/auth/register`, {
         name,
         email,
         password,
+        confirmPassword,
       });
 
       if (data.success) {
-        setIsLoggedIn(true);
-        navigate("/verify-account");
+        setIsLoggedIn(false);
+        alert("Registration successful! Please login to continue.");
+        navigate("/login");
       } else {
         console.log(data.message);
       }
@@ -134,7 +126,7 @@ const Register = () => {
           <Button
             variant="primary"
             className="w-full rounded-full"
-            disabled={isFormInvalid} // Button disabled if validation fails
+            disabled={isFormValid} // Button disabled if validation fails
           >
             Register
           </Button>

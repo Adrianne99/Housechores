@@ -5,7 +5,7 @@ const Dashboard = () => {
   const { userData } = useContext(AppContext);
 
   return (
-    <div>
+    <div className="relative">
       Dashboard
       <div className="">
         {userData ? `Welcome, ${userData.name}` : "Loading user data..."}

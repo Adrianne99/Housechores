@@ -1,5 +1,5 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { Suspense, lazy } from "react";
+import Sidebar from "./components/sidebar";
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -7,27 +7,33 @@ import {
   Route,
   RouterProvider,
 } from "react-router";
-import Navbar from "./components/navbar";
-import Header from "./components/header";
-import Footer from "./components/footer";
-import Hero from "./pages/hero";
-import Register from "./pages/auth/register";
-import Login from "./pages/auth/login";
-import Email_verification from "./pages/auth/email_verification";
-import Reset_password from "./pages/auth/reset_password";
-import Dashboard from "./pages/dashboard/dashboard";
-import ProtectedRoute from "./pages/auth/protected_route";
+import AuthRoute from "./pages/auth/routes";
+import SavingsTracker from "./pages/dashboard/savings_tracker";
+import BottomNav from "./components/bottom_nav";
+
+const Navbar = lazy(() => import("./components/navbar"));
+const Footer = lazy(() => import("./components/footer"));
+const Hero = lazy(() => import("./pages/hero"));
+const Register = lazy(() => import("./pages/auth/register"));
+const Login = lazy(() => import("./pages/auth/login"));
+const Email_verification = lazy(() =>
+  import("./pages/auth/email_verification")
+);
+const Reset_password = lazy(() => import("./pages/auth/reset_password"));
+const Dashboard = lazy(() => import("./pages/dashboard/dashboard"));
+const BudgetPlanner = lazy(() => import("./pages/dashboard/budget_planner"));
+const CalorieCounter = lazy(() => import("./pages/dashboard/calorie_counter"));
+const Documentation = lazy(() => import("./pages/dashboard/documentation"));
+const Profile = lazy(() => import("./pages/dashboard/profile"));
+const Todo = lazy(() => import("./pages/dashboard/todo"));
 
 const App_layout = () => {
   return (
-    <div className="w-full h-full bg-[#3FC7CF]/50">
-      <Header />
-      <div className="bg-white w-full h-full rounded-t-3xl">
-        <div className="max-w-[1440px] mx-auto">
-          <Navbar />
-          <Outlet />
-          <Footer />
-        </div>
+    <div className="w-full h-full">
+      <div className="bg-white w-full h-fit relative">
+        <Navbar />
+        <Outlet />
+        <Footer />
       </div>
     </div>
   );
@@ -35,10 +41,22 @@ const App_layout = () => {
 
 const Dashboard_layout = () => {
   return (
-    <div>
-      <Navbar />
-      <Dashboard />
-      <Footer />
+    <div className="flex w-full bg-[#DBDFE6] min-h-screen relative">
+      <div className="hidden lg:grid grid-cols-[280px_1fr]">
+        <Sidebar />
+        <main className="min-h-screen lg:ml-[280px] w-full">
+          <Outlet />
+          <Footer />
+        </main>
+      </div>
+
+      <div className="lg:hidden w-full">
+        <BottomNav />
+        <main className="min-h-screen">
+          <Outlet />
+          <Footer />
+        </main>
+      </div>
     </div>
   );
 };
@@ -68,16 +86,25 @@ const router = createBrowserRouter(
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<Dashboard_layout />} />
+      <Route element={<AuthRoute requireAuth={true} />}>
+        <Route element={<Dashboard_layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/budget-planner" element={<BudgetPlanner />} />
+          <Route path="/todo-app" element={<Todo />} />
+          <Route path="/calorie-counter" element={<CalorieCounter />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/savings-tracker" element={<SavingsTracker />} />
+          <Route path="/documentation" element={<Documentation />} />
+        </Route>
+
+        <Route path="/verify-account" element={<Email_verification />} />
       </Route>
 
-      <Route path="/register" index element={<Register_layout />} />
-
-      <Route path="/login" index element={<Login_layout />} />
-
-      <Route path="/verify-account" element={<Email_verification />} />
-      <Route path="/reset-password" element={<Reset_password />} />
+      <Route element={<AuthRoute requireAuth={false} />}>
+        <Route path="/register" index element={<Register_layout />} />
+        <Route path="/login" index element={<Login_layout />} />
+        <Route path="/reset-password" element={<Reset_password />} />
+      </Route>
     </>
   )
 );
@@ -85,7 +112,9 @@ const router = createBrowserRouter(
 function App() {
   return (
     <div className="app">
-      <RouterProvider router={router} />
+      <Suspense fallback={<div>Loading Page....</div>}>
+        <RouterProvider router={router} />
+      </Suspense>
     </div>
   );
 }

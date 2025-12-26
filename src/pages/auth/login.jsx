@@ -24,30 +24,33 @@ const Login = () => {
 
   const navigate = useNavigate();
 
-  const { BACKEND_URL, setIsLoggedIn, getUserData, setUserData } =
+  const { BACKEND_URL, setIsLoggedIn, loginUser, setUserData } =
     useContext(AppContext);
 
   const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitted(true);
+    if (isFormInvalid) return;
+
     try {
-      e.preventDefault();
+      const { data } = await axios.post(
+        `${BACKEND_URL}/api/auth/login`,
+        { email, password },
+        { withCredentials: true }
+      );
 
-      axios.defaults.withCredentials = true;
-
-      setIsSubmitted(true);
-      const { data } = await axios.post(`${BACKEND_URL}/api/auth/login`, {
-        email,
-        password,
-      });
-
-      if (data.success) {
-        setIsLoggedIn(true);
-        navigate("/dashboard");
-        getUserData();
-      } else {
-        console.log(data.message);
+      if (!data.success) {
+        return alert(data.message);
       }
-    } catch (error) {
-      console.error(error.message);
+
+      // 🔥 SET STATE DIRECTLY
+      setIsLoggedIn(true);
+      setUserData(data.userData);
+
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      console.error(err);
+      alert("Unable to login");
     }
   };
 
