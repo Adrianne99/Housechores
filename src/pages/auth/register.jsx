@@ -1,8 +1,8 @@
 import React, { useState, useContext, useEffect } from "react";
 import { H2, H3, H6, Paragraph } from "../../components/texts";
 import { LuUserRound, LuMail, LuLock } from "react-icons/lu";
-import { Button } from "../../components/Buttons";
 import { TextInput } from "../../components/input";
+import { Button } from "../../components/buttons";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import { AppContext } from "../../context/app_context";
@@ -91,7 +91,7 @@ const Register = () => {
           {/* Email Input with Real-time Validation */}
           <TextInput
             id="email"
-            label="Email Address"
+            label="Email Address or Username"
             type="email"
             placeholder="John.doe@example.com"
             value={email}

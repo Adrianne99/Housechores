@@ -112,7 +112,7 @@ const Sidebar = () => {
   );
 
   return (
-    <div className="w-[280px] h-screen bg-white px-6 shadow-xs fixed ">
+    <div className="md:w-[220px] lg:w-[280px] h-screen bg-white md:px-3 lg:px-6 shadow-xs fixed ">
       <div className="border-b border-neutral-200 py-3 mb-4">
         <img src={logo} alt="Housechores Logo" className="w-32 mx-auto" />
       </div>

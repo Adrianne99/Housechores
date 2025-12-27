@@ -10,6 +10,7 @@ import {
 import AuthRoute from "./pages/auth/routes";
 import SavingsTracker from "./pages/dashboard/savings_tracker";
 import BottomNav from "./components/bottom_nav";
+import { useIsMobile } from "./hooks/use_is_mobile";
 
 const Navbar = lazy(() => import("./components/navbar"));
 const Footer = lazy(() => import("./components/footer"));
@@ -24,7 +25,9 @@ const Dashboard = lazy(() => import("./pages/dashboard/dashboard"));
 const BudgetPlanner = lazy(() => import("./pages/dashboard/budget_planner"));
 const CalorieCounter = lazy(() => import("./pages/dashboard/calorie_counter"));
 const Documentation = lazy(() => import("./pages/dashboard/documentation"));
-const Profile = lazy(() => import("./pages/dashboard/profile"));
+const MobileProfile = lazy(() => import("./pages/profile/mobile_profile"));
+const DesktopProfile = lazy(() => import("./pages/profile/desktop_profile"));
+const Edit_profile = lazy(() => import("./pages/profile/edit_profile"));
 const Todo = lazy(() => import("./pages/dashboard/todo"));
 
 const App_layout = () => {
@@ -39,24 +42,40 @@ const App_layout = () => {
   );
 };
 
-const Dashboard_layout = () => {
+const Dashboard_layout = ({ children }) => {
   return (
     <div className="flex w-full bg-[#DBDFE6] min-h-screen relative">
-      <div className="hidden lg:grid grid-cols-[280px_1fr]">
+      <div className="hidden md:grid grid-cols-[280px_1fr]">
         <Sidebar />
-        <main className="min-h-screen lg:ml-[280px] w-full">
+        <main className="min-h-screen md:ml-[220px] lg:ml-[280px] w-full">
+          {children}
           <Outlet />
           <Footer />
         </main>
       </div>
 
-      <div className="lg:hidden w-full">
+      <div className="md:hidden w-full">
         <BottomNav />
         <main className="min-h-screen">
+          {children}
           <Outlet />
           <Footer />
         </main>
       </div>
+    </div>
+  );
+};
+
+const ProfileGate = () => {
+  const isMobile = useIsMobile();
+
+  return isMobile ? (
+    <MobileProfile />
+  ) : (
+    <div>
+      <Dashboard_layout>
+        <DesktopProfile />
+      </Dashboard_layout>
     </div>
   );
 };
@@ -87,16 +106,18 @@ const router = createBrowserRouter(
       </Route>
 
       <Route element={<AuthRoute requireAuth={true} />}>
+        <Route path="/profile" element={<ProfileGate />} />
+
         <Route element={<Dashboard_layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/budget-planner" element={<BudgetPlanner />} />
           <Route path="/todo-app" element={<Todo />} />
           <Route path="/calorie-counter" element={<CalorieCounter />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/edit-profile" element={<Edit_profile />} />
           <Route path="/savings-tracker" element={<SavingsTracker />} />
           <Route path="/documentation" element={<Documentation />} />
         </Route>
-
+        <Route path="/profile" element={<MobileProfile />} />
         <Route path="/verify-account" element={<Email_verification />} />
       </Route>
 
