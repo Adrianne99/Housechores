@@ -1,6 +1,6 @@
 import React, { useRef, useContext, useEffect } from "react";
 import { H3, Paragraph } from "../../components/texts";
-import { Button } from "../../components/Buttons";
+import { Button } from "../../components/buttons";
 import { AppContext } from "../../context/app_context";
 import axios from "axios";
 import { useNavigate } from "react-router";
@@ -44,19 +44,16 @@ const Email_verification = () => {
   }, [isLoggedIn, userData]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-blue to purple-400">
+    <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-primary via-second-gradient to-third-gradient">
       <div className="">
         <form
           onSubmit={onSubmitHandler}
-          className="bg-slate-900 p-8 rounded-lg shadow-lg w-96 text-sm"
+          className="bg-white rounded-xl shadow-lg p-6 sm:p-15 w-[320px] sm:w-[450px] text-sm"
         >
-          <H3 className="text-white text-center font-bold font-inter">
+          <H3 className="text-black text-center font-bold font-inter">
             Email Verify OTP
           </H3>
-          <Paragraph
-            variant="base"
-            className="text-indigo-300 text-center mt-2"
-          >
+          <Paragraph variant="base" className="text-center mt-2">
             Enter the 6-digit code sent to your Email.
           </Paragraph>
           <div className="flex justify-between mb-8" onPaste={handlePaste}>
@@ -72,12 +69,12 @@ const Email_verification = () => {
                     ref={(e) => (inputRefs.current[index] = e)}
                     onInput={(e) => handleInput(e, index)}
                     onKeyDown={(e) => handleKeyDown(e, index)}
-                    className="size-12  text-white text-center border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="size-12  text-black text-center border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 );
               })}
           </div>
-          <Button size="lg" variant="primary">
+          <Button size="lg" variant="primary" className="w-full">
             Verify Email
           </Button>
         </form>

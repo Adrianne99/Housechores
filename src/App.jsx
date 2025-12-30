@@ -82,7 +82,7 @@ const ProfileGate = () => {
 
 const Register_layout = () => {
   return (
-    <div className="bg-[#9FE2E7]">
+    <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
       <Register />
     </div>
   );
@@ -90,7 +90,7 @@ const Register_layout = () => {
 
 const Login_layout = () => {
   return (
-    <div className="bg-[#9FE2E7]">
+    <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
       <Login />
     </div>
   );

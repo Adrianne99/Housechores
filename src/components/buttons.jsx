@@ -28,11 +28,11 @@ export const Button = ({
   const baseClasses = `
   font-medium
   cursor-pointer
-  rounded-full
+  rounded-xl
   inline-flex items-center justify-center
    shadow-sm
   transition-all duration-200 ease-in-out
- 
+  w-full
   font-inter
   focus:outline-none
   focus:ring-4 focus:ring-indigo-300/40

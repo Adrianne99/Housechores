@@ -13,8 +13,8 @@ const MarqueeRow = ({ reverse }) => {
           reverse ? "animate-marquee-reverse" : "animate-marquee"
         }`}
       >
-        {displayItems.map((Icon) => (
-          <div key={Icon} className="pr-12 shrink-0">
+        {displayItems.map((Icon, i) => (
+          <div key={i} className="pr-12 shrink-0">
             <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 shadow-sm text-primary">
               <Icon size={48} strokeWidth={1.5} />
             </div>

@@ -8,13 +8,14 @@ export const TextInput = ({
   type = "text",
   error,
   id,
-  helperText, // <--- NEW PROP
-  required = true, // <--- NEW PROP
+  helperText,
+  required = true,
+  showErrorText = true,
   className = "",
   ...props
 }) => {
   const baseInputClasses = `
-    mt-1 block w-full rounded-lg border p-2.5 text-base 
+    mt-1 block w-full rounded-xl border p-2.5 text-base 
     transition duration-150 ease-in-out focus:outline-none
   `;
 
@@ -53,7 +54,9 @@ export const TextInput = ({
       />
 
       {/* Error Message */}
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && showErrorText && (
+        <p className="mt-1 text-sm text-red-600">{error}</p>
+      )}
 
       {/* Helper Text */}
       {helperText && !error && (

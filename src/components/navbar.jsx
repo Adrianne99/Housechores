@@ -156,7 +156,7 @@ const Navbar = () => {
                 onClick={() => setOpen(false)}
               >
                 <Link to={index.link}>
-                  <H6 className="hover:text-neutral-950 text-neutral-600">
+                  <H6 className="hover:text-neutral-950 text-neutral-700 text-base!">
                     {index.item}
                   </H6>
                 </Link>
