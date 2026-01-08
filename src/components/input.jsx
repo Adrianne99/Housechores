@@ -47,6 +47,7 @@ export const TextInput = ({
       {/* Input Field */}
       <input
         id={id}
+        autoComplete="false"
         type={type}
         className={inputClasses}
         required={required} // Pass native required attribute

@@ -1,29 +1,28 @@
-// Classes for Heading Levels
+import React from "react";
+import { cn } from "../utils/utils";
+
+// Shadcn/ui Standard Heading Scale
 const headingClasses = {
-  h1: "text-4xl font-extrabold text-neutral-900 tracking-tight sm:text-5xl font-inter",
-  h2: "text-3xl font-bold text-neutral-800 tracking-tight font-inter",
-  h3: "text-2xl font-semibold text-neutral-700 font-inter ",
-  h4: "text-xl font-medium text-neutral-600 font-inter ",
-  h5: "text-lg font-medium text-neutral-700 font-inter ",
-  h6: "text-xs lg:text-base font-normal text-neutral-400 font-inter",
+  // Mobile (xs) -> Desktop (md+)
+  h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-neutral-900",
+  h2: "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0 text-neutral-800",
+  h3: "scroll-m-20 text-2xl font-semibold tracking-tight text-neutral-800",
+  h4: "scroll-m-20 text-xl font-semibold tracking-tight text-neutral-700",
+  h5: "scroll-m-20 text-lg font-semibold tracking-tight text-neutral-700",
+  h6: "text-sm font-medium leading-none text-neutral-500 uppercase tracking-wider", // Label style
 };
 
-/**
- * Base Heading Component (Internal use only).
- */
 const Heading = ({ level, className = "", children, ...props }) => {
-  const Tag = `h${level}`.toLowerCase();
+  const Tag = `h${level}`;
   const defaultClasses = headingClasses[Tag] || headingClasses.h2;
-  const classes = `${defaultClasses} ${className}`;
 
   return (
-    <Tag className={classes} {...props}>
+    <Tag className={cn(defaultClasses, className)} {...props}>
       {children}
     </Tag>
   );
 };
 
-// Exporting individual Heading Components
 export const H1 = (props) => <Heading level={1} {...props} />;
 export const H2 = (props) => <Heading level={2} {...props} />;
 export const H3 = (props) => <Heading level={3} {...props} />;
@@ -31,18 +30,15 @@ export const H4 = (props) => <Heading level={4} {...props} />;
 export const H5 = (props) => <Heading level={5} {...props} />;
 export const H6 = (props) => <Heading level={6} {...props} />;
 
-// Classes for Paragraph Variants
+// Shadcn Paragraph & Typography Variants
 const paragraphClasses = {
-  base: "text-base text-gray-700 leading-relaxed mb-4",
-  lead: "text-xl text-gray-800 leading-normal mb-6 font-light",
-  small: "text-sm text-gray-500 leading-tight mb-2",
-  quote:
-    "text-lg italic text-gray-600 border-l-4 border-indigo-500 pl-4 py-1 my-6",
+  base: "leading-7 [&:not(:first-child)]:mt-6 text-neutral-600",
+  lead: "text-xl text-neutral-500",
+  small: "text-sm font-medium leading-none text-neutral-500",
+  quote: "mt-6 border-l-2 border-neutral-300 pl-6 italic text-neutral-700",
+  muted: "text-sm text-neutral-500", // Standard Shadcn muted text
 };
 
-/**
- * Reusable Paragraph Component.
- */
 export const Paragraph = ({
   variant = "base",
   bold = false,
@@ -52,16 +48,18 @@ export const Paragraph = ({
   ...props
 }) => {
   const defaultClasses = paragraphClasses[variant] || paragraphClasses.base;
-
-  const modifiers = [bold ? "font-bold" : "", italic ? "italic" : ""].join(" ");
-
-  const classes = `${defaultClasses} ${modifiers} ${className}`;
-
-  // Use a <blockquote> tag for quotes
   const Tag = variant === "quote" ? "blockquote" : "p";
 
   return (
-    <Tag className={classes} {...props}>
+    <Tag
+      className={cn(
+        defaultClasses,
+        bold && "font-bold",
+        italic && "italic",
+        className
+      )}
+      {...props}
+    >
       {children}
     </Tag>
   );

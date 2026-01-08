@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import axios from "axios";
-import { AppContext } from "../context/app_context";
-import logo from "../assets/logo.png";
-import { H6 } from "./texts";
+import { AppContext } from "@/context/app_context";
+import logo from "@/assets/logo.png";
+import { H6, Paragraph } from "./texts";
+import Toast from "@/components/toast";
 import {
   LayoutDashboard,
   Scroll,
@@ -11,10 +12,11 @@ import {
   Apple,
   BookOpen,
   User,
-  ArrowLeftToLine,
+  LogOut,
   NotebookText,
 } from "lucide-react";
-import { cn } from "../utils/utils";
+import { cn } from "@/utils/utils";
+import Tooltip from "./tooltip";
 
 const sidebar_items = [
   {
@@ -29,12 +31,7 @@ const sidebar_items = [
     icon: PiggyBank,
     section: "main",
   },
-  {
-    item: "Todo App",
-    link: "/todo-app",
-    icon: Scroll,
-    section: "main",
-  },
+  { item: "Todo App", link: "/todo-app", icon: Scroll, section: "main" },
   {
     item: "Budget Planner",
     link: "/budget-planner",
@@ -53,100 +50,126 @@ const sidebar_items = [
     icon: BookOpen,
     section: "main",
   },
-  {
-    item: "Profile",
-    link: "/profile",
-    icon: User,
-    section: "workspace",
-  },
-  { item: "Logout", link: "#", icon: ArrowLeftToLine, section: "workspace" }, // Changed link to # for logout
+  { item: "Profile", link: "/profile", icon: User, section: "workspace" },
+  { item: "Logout", link: "#", icon: LogOut, section: "workspace" },
 ];
 
 const Sidebar = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { BACKEND_URL, setIsLoggedIn, setUserData } = useContext(AppContext);
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
 
   const sidebarClass = (link) =>
     cn(
-      "flex items-center px-3 py-1 rounded-lg transition-all cursor-pointer",
+      "flex items-center justify-center lg:justify-start px-4 py-2.5 my-1 rounded-xl transition-all duration-200 group",
       pathname === link
-        ? "bg-linear-to-r from-primary/30 via-second-gradient/20 to-third-gradient/20 text-primary"
-        : "text-neutral-600 hover:bg-neutral-100"
+        ? "bg-primary/10 text-primary shadow-sm shadow-primary/5"
+        : "text-neutral-500 hover:bg-neutral-50"
     );
 
   const logout = async (e) => {
-    // Prevent navigation since we are handling redirection manually
     if (e) e.preventDefault();
     try {
       axios.defaults.withCredentials = true;
       const { data } = await axios.get(`${BACKEND_URL}/api/auth/logout`);
 
       if (data.success) {
-        setIsLoggedIn(false);
-        setUserData(null);
-        navigate("/", { replace: true });
+        setToast({ show: true, message: "Logging out...", type: "success" });
+        setTimeout(() => {
+          setIsLoggedIn(false);
+          setUserData(null);
+          navigate("/", { replace: true });
+        }, 1200);
       }
-      console.log("Logged out successfully");
     } catch (error) {
-      console.log(error.message);
+      setToast({ show: true, message: "Logout failed", type: "error" });
     }
   };
 
-  // Added onClick to destructured props
-  const SidebarItem = ({ item, link, icon: Icon, onClick }) => (
-    <Link to={link} className={sidebarClass(link)} onClick={onClick}>
-      <div className="flex items-center gap-1 px-2 py-1.5">
-        <Icon size={20} strokeWidth={2} />
-        <H6
-          className={cn(
-            pathname === link
-              ? "text-primary font-semibold!"
-              : "text-neutral-500"
-          )}
-        >
-          {item}
-        </H6>
-      </div>
-    </Link>
-  );
+  const SidebarItem = ({ item, link, icon: Icon, onClick }) => {
+    const isMobileOrLarge = "block md:hidden lg:block"; // CSS logic for text visibility
+
+    return (
+      <Link to={link} className={sidebarClass(link)} onClick={onClick}>
+        {/* 1. We wrap the content inside the Tooltip.
+         2. We use a 'disabled' prop logic or simply only trigger on md screens.
+      */}
+        <Tooltip text={item} position="right">
+          <div className="flex items-center gap-3">
+            <Icon
+              size={20}
+              className={cn(
+                "transition-colors shrink-0",
+                pathname === link
+                  ? "text-primary"
+                  : "text-neutral-400 group-hover:text-neutral-600"
+              )}
+            />
+
+            <Paragraph
+              variant="small"
+              className={cn(
+                "transition-all mb-0 mt-0",
+                isMobileOrLarge, // Uses the responsive visibility
+                pathname === link
+                  ? "text-primary font-bold"
+                  : "text-neutral-600 font-medium"
+              )}
+            >
+              {item}
+            </Paragraph>
+          </div>
+        </Tooltip>
+      </Link>
+    );
+  };
 
   return (
-    <div className="md:w-[220px] lg:w-[280px] h-screen bg-white md:px-3 lg:px-6 shadow-xs fixed ">
-      <div className="border-b border-neutral-200 py-3 mb-4">
-        <img src={logo} alt="Housechores Logo" className="w-32 mx-auto" />
+    <aside className="w-full sm:w-64 md:w-20 lg:w-[280px] h-screen bg-white px-4 py-6 fixed flex flex-col transition-all duration-300">
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
+
+      {/* Logo: Icon only on md, full logo on others */}
+      <div className="px-2 mb-10 flex justify-center lg:justify-start">
+        <img src={logo} alt="Logo" className="w-32  block" />
+        <div className="hidden md:block lg:hidden size-10 bg-primary/10 rounded-lg" />
       </div>
 
-      {/* Main Section */}
-      <div className="flex flex-col gap-2 border-b border-neutral-200 py-2 mb-6">
+      <nav className="flex-1 space-y-1">
+        <H6 className="px-4 mb-4 text-primary md:hidden lg:block block text-[10px] uppercase tracking-widest">
+          Main Menu
+        </H6>
         {sidebar_items
           .filter((i) => i.section === "main")
           .map((props) => (
             <SidebarItem key={props.item} {...props} />
           ))}
-      </div>
+      </nav>
 
-      {/* Workspace Section */}
-      <div className="space-y-2">
-        <H6 className="text-primary font-semibold uppercase text-xs tracking-wider">
-          workspace
+      <div className="pt-6 border-t border-neutral-100">
+        <H6 className="px-4 mb-4 text-primary md:hidden lg:block block text-[10px] uppercase tracking-widest">
+          Workspace
         </H6>
-
-        {sidebar_items
-          .filter((i) => i.section === "workspace" && i.item !== "Logout")
-          .map((props) => (
-            <SidebarItem key={props.item} {...props} />
-          ))}
-
-        {/* Manual Logout Item with logic attached */}
-        <SidebarItem
-          item="Logout"
-          link="#"
-          icon={ArrowLeftToLine}
-          onClick={logout}
-        />
+        <div className="space-y-1">
+          {sidebar_items
+            .filter((i) => i.section === "workspace" && i.item !== "Logout")
+            .map((props) => (
+              <SidebarItem key={props.item} {...props} />
+            ))}
+          <SidebarItem item="Logout" link="#" icon={LogOut} onClick={logout} />
+        </div>
       </div>
-    </div>
+    </aside>
   );
 };
 

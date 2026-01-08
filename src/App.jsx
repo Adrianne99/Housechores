@@ -44,23 +44,43 @@ const App_layout = () => {
 
 const Dashboard_layout = ({ children }) => {
   return (
-    <div className="flex w-full bg-[#DBDFE6] min-h-screen relative">
-      <div className="hidden md:grid grid-cols-[280px_1fr]">
+    /* The base background is light grey */
+    <div className="flex w-full min-h-screen font-inter overflow-x-hidden">
+      {/* Desktop Sidebar stays fixed on the left */}
+      <div className="hidden md:block z-100">
         <Sidebar />
-        <main className="min-h-screen md:ml-[220px] lg:ml-[280px] w-full">
-          {children}
-          <Outlet />
-          <Footer />
-        </main>
       </div>
 
-      <div className="md:hidden w-full">
-        <BottomNav />
-        <main className="min-h-screen">
-          {children}
-          <Outlet />
-          <Footer />
+      {/* Main Content Container */}
+      <div className="flex flex-col flex-1 min-w-0">
+        <main
+          className="flex-1 transition-all duration-300
+            md:ml-20 
+            lg:ml-[280px] 
+            "
+        >
+          <div className="min-h-full w-full bg-[#F3F3FF] md:rounded-tl-3xl border border-gray-200  relative overflow-hidden p-4 md:p-6 lg:p-8">
+            <div
+              className="absolute inset-0 opacity-[0.03] pointer-events-none"
+              style={{
+                backgroundImage: `linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)`,
+                size: "20px 20px",
+                backgroundSize: "30px 30px",
+              }}
+            />
+
+            <div className="relative z-10 max-w-[1500px] mx-auto w-full">
+              {children}
+              <Outlet />
+              <Footer />
+            </div>
+          </div>
         </main>
+
+        {/* Mobile Navigation remains at bottom */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+          <BottomNav />
+        </div>
       </div>
     </div>
   );

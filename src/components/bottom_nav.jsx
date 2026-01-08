@@ -8,11 +8,16 @@ import {
   User,
   ListPlus,
   NotebookText,
+  X,
 } from "lucide-react";
-import { H6 } from "./texts";
-import { Link } from "react-router";
+import { H6, Paragraph } from "./texts"; // Using unified text components
+import { Link, useLocation } from "react-router";
+import { cn } from "@/utils/utils";
 
 const BottomNav = () => {
+  const { pathname } = useLocation();
+  const [open, setOpen] = useState(false);
+
   const sidebar_items = [
     {
       item: "Dashboard",
@@ -48,68 +53,137 @@ const BottomNav = () => {
     { item: "Profile", link: "/profile", icon: User, section: "workspace" },
   ];
 
-  const [open, setOpen] = useState(false);
-
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "auto";
   }, [open]);
 
   return (
-    <div className="relative z-50">
+    <div className="relative z-50 font-inter">
+      {/* 🔹 OVERLAY */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/30 z-40"
+          className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm z-40 transition-opacity"
           onClick={() => setOpen(false)}
         />
       )}
+
+      {/* 🔹 ACTION MENU (DRAWER) */}
       <div
-        className={`fixed z-50 w-full h-fit  transition-transform duration-300 ${
-          open ? "translate-y-0 bottom-28" : "translate-y-full bottom-0"
-        }`}
-        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "fixed z-50 w-full px-6 transition-all duration-300 ease-out",
+          open
+            ? "bottom-24 translate-y-0 opacity-100"
+            : "bottom-0 translate-y-10 opacity-0 pointer-events-none"
+        )}
       >
-        <div className="space-y-2">
-          {sidebar_items
-            .filter((i) => i.section === "main")
-            .map((item) => (
-              <Link
-                key={item.item}
-                to={item.link}
-                onClick={() => setOpen(false)}
-              >
-                <div className="border-b border-neutral-300 py-3 w-4/5 mx-auto bg-white text-center rounded-xl my-2">
-                  <H6 className="text-neutral-600 hover:text-neutral-950">
+        <div className="bg-white rounded-[24px] shadow-2xl border border-neutral-100 p-2 overflow-hidden">
+          <div className="flex flex-col">
+            {sidebar_items
+              .filter((i) => i.section === "main")
+              .map((item) => (
+                <Link
+                  key={item.item}
+                  to={item.link}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-4 px-6 py-4 rounded-xl transition-colors",
+                    pathname === item.link
+                      ? "bg-primary/5"
+                      : "active:bg-neutral-50"
+                  )}
+                >
+                  <item.icon
+                    size={20}
+                    className={
+                      pathname === item.link
+                        ? "text-primary"
+                        : "text-neutral-400"
+                    }
+                  />
+                  <Paragraph
+                    variant="small"
+                    className={cn(
+                      "m-0 font-bold",
+                      pathname === item.link
+                        ? "text-primary"
+                        : "text-neutral-600"
+                    )}
+                  >
                     {item.item}
-                  </H6>
-                </div>
-              </Link>
-            ))}
+                  </Paragraph>
+                </Link>
+              ))}
+          </div>
         </div>
       </div>
 
       {/* 🔹 BOTTOM BAR */}
-      <div className="bg-white fixed bottom-4 w-4/5 left-1/2 -translate-x-1/2 rounded-xl shadow-xs z-50">
-        <div className="flex justify-between items-center p-3 relative">
+      <div className="fixed bottom-6 w-[90%] left-1/2 -translate-x-1/2 bg-white rounded-full shadow-lg border border-neutral-100 z-50 px-2 py-2">
+        <div className="flex justify-around items-center relative">
+          {/* Dashboard Link */}
           {sidebar_items
-            .filter((i) => i.section === "workspace")
+            .filter((i) => i.item === "Dashboard")
             .map((item) => (
-              <div className="space-y-1 text-center" key={item.item}>
-                <Link to={item.link}>
-                  <item.icon size={20} className="mx-auto" />
-                  <H6>{item.item}</H6>
-                </Link>
-              </div>
+              <Link
+                to={item.link}
+                key={item.item}
+                className="flex flex-col items-center gap-1 px-4 py-1"
+              >
+                <item.icon
+                  size={20}
+                  className={
+                    pathname === item.link ? "text-primary" : "text-neutral-400"
+                  }
+                />
+                <H6
+                  className={cn(
+                    "text-[10px] m-0",
+                    pathname === item.link ? "text-primary" : "text-neutral-400"
+                  )}
+                >
+                  {item.item}
+                </H6>
+              </Link>
             ))}
 
-          {/* 🔹 CENTER BUTTON */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          {/* 🔹 CENTER TOGGLE BUTTON */}
+          <div className="relative -top-1">
             <button
               onClick={() => setOpen((prev) => !prev)}
-              className="bg-linear-to-r from-primary via-second-gradient to-third-gradient p-4 rounded-full text-white shadow-lg"
+              className={cn(
+                "p-4 rounded-full text-white shadow-lg transition-transform active:scale-90",
+                "bg-primary" // Using your primary brand color
+              )}
             >
-              <ListPlus size={20} />
+              {open ? <X size={20} /> : <ListPlus size={20} />}
             </button>
           </div>
+
+          {/* Profile Link */}
+          {sidebar_items
+            .filter((i) => i.item === "Profile")
+            .map((item) => (
+              <Link
+                to={item.link}
+                key={item.item}
+                className="flex flex-col items-center gap-1 px-4 py-1"
+              >
+                <item.icon
+                  size={20}
+                  className={
+                    pathname === item.link ? "text-primary" : "text-neutral-400"
+                  }
+                />
+                <H6
+                  className={cn(
+                    "text-[10px] m-0",
+                    pathname === item.link ? "text-primary" : "text-neutral-400"
+                  )}
+                >
+                  {item.item}
+                </H6>
+              </Link>
+            ))}
         </div>
       </div>
     </div>

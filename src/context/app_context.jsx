@@ -1,11 +1,10 @@
 import { createContext, useEffect, useState } from "react";
 import axios from "axios";
+axios.defaults.withCredentials = true;
 
 export const AppContext = createContext();
 
 export const AppContextProvider = ({ children }) => {
-  axios.defaults.withCredentials = true;
-
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -29,7 +28,7 @@ export const AppContextProvider = ({ children }) => {
       setIsLoggedIn(false);
       setUserData(null);
     } finally {
-      setLoading(false); // 👈 VERY IMPORTANT
+      setLoading(false);
     }
   };
 

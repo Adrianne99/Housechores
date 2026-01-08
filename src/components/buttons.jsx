@@ -23,6 +23,7 @@ export const Button = ({
   disabled = false,
   children,
   className = "",
+  type = "button",
   ...props
 }) => {
   const baseClasses = `

@@ -1,35 +1,34 @@
 @import "tailwindcss";
 
-/* 1. Define Color Variables and Tailwind Theme */
+/* =====================================================
+   THEME TOKENS (Tailwind v4)
+   ===================================================== */
 @theme {
-  /* Brand Colors */
+  /* Brand */
   --color-primary: #4239c4;
   --color-secondary: #9fe2e7;
   --color-disabled: #2ba8af;
 
+  /* Gradients */
   --color-second-gradient: oklch(58.5% 0.233 277.117);
   --color-third-gradient: oklch(87% 0.065 274.039);
 
-  /* UI Colors */
+  /* UI */
   --color-surface: #ffffff;
   --color-background: #f8fafc;
   --color-text-main: #1e293b;
   --color-text-muted: #64748b;
 
-  /* AI/Action Colors */
-  --color-ai-glow: #6366f1; /* Indigo for AI elements */
+  /* Status / AI */
+  --color-ai-glow: #6366f1;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
 }
 
-/* 2. Import Fonts */
+/* =====================================================
+   FONTS
+   ===================================================== */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Lato:wght@100..900&family=Roboto:wght@100..900&display=swap");
-
-/* 3. Global Styles & Utilities */
-:root {
-  /* You can also keep them in :root for use in non-Tailwind logic */
-  --brand-cyan: #3fc7cf;
-}
 
 .font-inter {
   font-family: "Inter", sans-serif;
@@ -41,7 +40,171 @@
   font-family: "Roboto", sans-serif;
 }
 
-/* Remove Spinners */
+/* =====================================================
+   DESIGN TOKENS — SPACING + DIMENSIONS (xs)
+   ===================================================== */
+:root {
+  /* ---------- Spacing ---------- */
+  --m: 1rem;
+  --mx: 1.5rem;
+  --my: 1rem;
+
+  --p: 1rem;
+  --px: 1.5rem;
+  --py: 1rem;
+
+  --space-x: 1rem;
+  --space-y: 1rem;
+
+  /* ---------- Radius ---------- */
+  --radius-xs: 0.5rem;
+  --radius-sm: 1rem
+
+  /* ---------- Width ---------- */
+  --w-xs: 16rem;
+  --w-sm: 20rem;
+  --w-md: 24rem;
+  --w-lg: 28rem;
+  --w-xl: 32rem;
+
+  --min-w-xs: 12rem;
+  --min-w-sm: 16rem;
+  --min-w-md: 20rem;
+  --min-w-lg: 24rem;
+
+  --max-w-xs: 18rem;
+  --max-w-sm: 24rem;
+  --max-w-md: 28rem;
+  --max-w-lg: 32rem;
+  --max-w-xl: 36rem;
+
+  /* ---------- Height ---------- */
+  --h-xs: 2.5rem;
+  --h-sm: 3rem;
+  --h-md: 3.5rem;
+  --h-lg: 4rem;
+
+  --min-h-xs: 2.25rem;
+  --min-h-sm: 2.75rem;
+  --min-h-md: 3.25rem;
+
+  --max-h-xs: 3rem;
+  --max-h-sm: 4rem;
+  --max-h-md: 5rem;
+
+  /* ---------- Misc ---------- */
+  --brand-cyan: #3fc7cf;
+}
+
+/* =====================================================
+   DESIGN TOKENS — md
+   ===================================================== */
+@media (min-width: 768px) {
+  :root {
+    /* Spacing */
+    --m: 1.25rem;
+    --mx: 2rem;
+    --my: 1.25rem;
+
+    --p: 1.25rem;
+    --px: 2rem;
+    --py: 1.25rem;
+
+    --space-x: 1.25rem;
+    --space-y: 1.25rem;
+
+    --radius: 0.75rem;
+
+    /* Width */
+    --w-xs: 18rem;
+    --w-sm: 22rem;
+    --w-md: 26rem;
+    --w-lg: 32rem;
+    --w-xl: 36rem;
+
+    --min-w-xs: 14rem;
+    --min-w-sm: 18rem;
+    --min-w-md: 22rem;
+    --min-w-lg: 26rem;
+
+    --max-w-xs: 20rem;
+    --max-w-sm: 28rem;
+    --max-w-md: 32rem;
+    --max-w-lg: 36rem;
+    --max-w-xl: 42rem;
+
+    /* Height */
+    --h-xs: 2.75rem;
+    --h-sm: 3.25rem;
+    --h-md: 3.75rem;
+    --h-lg: 4.5rem;
+
+    --min-h-xs: 2.5rem;
+    --min-h-sm: 3rem;
+    --min-h-md: 3.5rem;
+
+    --max-h-xs: 3.25rem;
+    --max-h-sm: 4.5rem;
+    --max-h-md: 5.5rem;
+  }
+}
+
+/* =====================================================
+   DESIGN TOKENS — xl
+   ===================================================== */
+@media (min-width: 1280px) {
+  :root {
+    /* Spacing */
+    --m: 2rem;
+    --mx: 3rem;
+    --my: 2rem;
+
+    --p: 2rem;
+    --px: 3rem;
+    --py: 2rem;
+
+    --space-x: 2rem;
+    --space-y: 2rem;
+
+    --radius: 1rem;
+
+    /* Width */
+    --w-xs: 20rem;
+    --w-sm: 24rem;
+    --w-md: 30rem;
+    --w-lg: 36rem;
+    --w-xl: 42rem;
+
+    --min-w-xs: 16rem;
+    --min-w-sm: 20rem;
+    --min-w-md: 26rem;
+    --min-w-lg: 30rem;
+
+    --max-w-xs: 24rem;
+    --max-w-sm: 32rem;
+    --max-w-md: 36rem;
+    --max-w-lg: 42rem;
+    --max-w-xl: 48rem;
+
+    /* Height */
+    --h-xs: 3rem;
+    --h-sm: 3.5rem;
+    --h-md: 4rem;
+    --h-lg: 5rem;
+
+    --min-h-xs: 2.75rem;
+    --min-h-sm: 3.25rem;
+    --min-h-md: 3.75rem;
+
+    --max-h-xs: 3.5rem;
+    --max-h-sm: 5rem;
+    --max-h-md: 6rem;
+  }
+}
+
+/* =====================================================
+   FORM NORMALIZATION
+   ===================================================== */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -51,6 +214,9 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* =====================================================
+   ANIMATIONS
+   ===================================================== */
 @keyframes spin-slow {
   from {
     transform: rotate(0deg);
@@ -58,19 +224,6 @@ input[type="number"] {
   to {
     transform: rotate(360deg);
   }
-}
-
-@keyframes marquee {
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 8s linear infinite;
 }
 
 @keyframes marquee {
@@ -91,6 +244,10 @@ input[type="number"] {
   }
 }
 
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
 .animate-marquee {
   animation: marquee 30s linear infinite;
 }
@@ -99,7 +256,9 @@ input[type="number"] {
   animation: marquee-reverse 30s linear infinite;
 }
 
-/* Add this to your index.css */
+/* =====================================================
+   UTILITIES
+   ===================================================== */
 .mask-fade-edges {
   mask-image: linear-gradient(
     to right,
@@ -108,7 +267,6 @@ input[type="number"] {
     black 85%,
     transparent 100%
   );
-  /* Ensure compatibility for Safari/Chrome */
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
