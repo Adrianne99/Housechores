@@ -12,10 +12,11 @@ export const TextInput = ({
   required = true,
   showErrorText = true,
   className = "",
+  placeholder,
   ...props
 }) => {
   const baseInputClasses = `
-    mt-1 block w-full rounded-xl border p-2.5 text-base 
+    mt-1 w-full rounded-xl border p-2.5 text-base 
     transition duration-150 ease-in-out focus:outline-none
   `;
 
@@ -25,7 +26,7 @@ export const TextInput = ({
     : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500";
 
   const inputClasses = [baseInputClasses, errorInputClasses, className].join(
-    " "
+    " ",
   );
 
   // Dynamic styling for the label
@@ -50,6 +51,7 @@ export const TextInput = ({
         autoComplete="false"
         type={type}
         className={inputClasses}
+        placeholder={placeholder}
         required={required} // Pass native required attribute
         {...props}
       />

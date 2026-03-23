@@ -1,7 +1,7 @@
 import React, { useState, useContext, useMemo } from "react";
 import { useNavigate } from "react-router";
 import axios from "axios";
-import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 import { H2, Paragraph } from "@/components/texts";
 import { TextInput } from "@/components/input";
@@ -11,22 +11,20 @@ import { cn } from "@/utils/utils";
 import logo from "@/assets/logo.png";
 import Toast from "@/components/toast";
 
-// CRITICAL: Ensure all requests in this file include cookies
+// Ensure all requests include cookies
 axios.defaults.withCredentials = true;
 
 const Register = () => {
   const navigate = useNavigate();
   const { BACKEND_URL } = useContext(AppContext);
+
   const [toast, setToast] = useState({
     show: false,
     message: "",
     type: "success",
-    duration: 5000,
   });
-
-  const showToast = (message, type = "success") => {
+  const showToast = (message, type = "success") =>
     setToast({ show: true, message, type });
-  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -40,7 +38,7 @@ const Register = () => {
     showPassword: false,
     showConfirmPassword: false,
     isChecked: false,
-    isLoading: false, // Added loading state for better UX
+    isLoading: false,
   });
 
   const [serverError, setServerError] = useState("");
@@ -65,12 +63,10 @@ const Register = () => {
     return {
       nameError:
         uiState.isSubmitted && !isFullnameValid
-          ? "Please enter first and last name."
+          ? "Enter first and last name."
           : "",
       emailError:
-        uiState.isSubmitted && !isEmailValid
-          ? "Invalid email address."
-          : serverError,
+        uiState.isSubmitted && !isEmailValid ? "Invalid email." : serverError,
       passwordError:
         uiState.isSubmitted && !isPasswordValid ? "Must be 8+ characters." : "",
       confirmError:
@@ -95,7 +91,6 @@ const Register = () => {
     setUiState((p) => ({ ...p, isLoading: true }));
 
     try {
-      // 1. REGISTER - Must have withCredentials: true to receive the session cookie/token
       const { data } = await axios.post(
         `${BACKEND_URL}/api/auth/register`,
         {
@@ -103,28 +98,25 @@ const Register = () => {
           email: formData.email,
           password: formData.password,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       if (data.success) {
         setServerError("");
-        showToast("Account created! Redirecting to Login", "success", 5000);
+        showToast("Account created! Redirecting to login...", "success");
 
         setTimeout(() => {
           navigate("/login", {
-            state: {
-              email: formData.email,
-              registrationSuccess: true,
-            },
+            state: { email: formData.email, registrationSuccess: true },
           });
-        }, 5000);
+        }, 3000);
       } else {
         setServerError(data.message);
       }
     } catch (error) {
       setServerError(
         error.response?.data?.message ||
-          "An error occurred during registration."
+          "An error occurred during registration.",
       );
     } finally {
       setUiState((p) => ({ ...p, isLoading: false }));
@@ -132,21 +124,19 @@ const Register = () => {
   };
 
   return (
-    <div className="relative min- h-screen bg-background font-inter flex flex-col items-center justify-center p-4 overflow-hidden">
+    <div className="relative min-h-screen bg-background font-inter flex flex-col items-center justify-center p-4 overflow-hidden">
       {toast.show && (
         <Toast
           message={toast.message}
           type={toast.type}
-          duration={5000}
+          duration={3000}
           onClose={() => setToast({ ...toast, show: false })}
         />
       )}
-      <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] rounded-full bg-primary/10 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] rounded-full bg-second-gradient/5 blur-[100px] pointer-events-none" />
 
       <button
         onClick={() => navigate(-1)}
-        className="fixed top-6 left-6 z-10 flex items-  center gap-2 text-text-muted hover:text-primary transition-colors group"
+        className="fixed top-6 left-6 flex items-center gap-2 text-text-muted hover:text-primary transition-colors group"
       >
         <ArrowLeft
           size={20}
@@ -274,7 +264,7 @@ const Register = () => {
                 "w-full h-11 rounded-lg font-semibold transition-all",
                 validation.isValid && !uiState.isLoading
                   ? "bg-primary text-white shadow-lg"
-                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed",
               )}
               disabled={!validation.isValid || uiState.isLoading}
             >

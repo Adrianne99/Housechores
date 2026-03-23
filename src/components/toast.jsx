@@ -49,7 +49,7 @@ const Toast = ({ message, type = "success", onClose, duration = 5000 }) => {
   return (
     <div
       className={cn(
-        "fixed top-5 right-5 z-100 flex flex-col min-w-[300px] rounded-lg border shadow-lg overflow-hidden animate-in fade-in slide-in-from-right-5",
+        "fixed md:top-5 md:right-5 z-100 flex flex-col min-w-[300px] rounded-lg border shadow-lg overflow-hidden animate-in fade-in slide-in-from-right-5",
         themes[type].container
       )}
     >

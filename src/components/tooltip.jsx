@@ -16,6 +16,7 @@ const Tooltip = ({ children, text, position = "right" }) => {
       className="relative flex items-center"
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
+      onClick={() => setShow(true)}
     >
       {children}
 

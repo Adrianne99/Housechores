@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   LayoutDashboard,
   Scroll,
@@ -6,17 +6,21 @@ import {
   Apple,
   BookOpen,
   User,
+  Bell,
+  Menu,
   ListPlus,
   NotebookText,
   X,
 } from "lucide-react";
-import { H6, Paragraph } from "./texts"; // Using unified text components
+import { H1, H2, H3, H4, H5, H6, Paragraph } from "./texts"; // Using unified text components
 import { Link, useLocation } from "react-router";
 import { cn } from "@/utils/utils";
+import { AppContext } from "@/context/app_context";
 
 const BottomNav = () => {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const { userData } = useContext(AppContext);
 
   const sidebar_items = [
     {
@@ -70,30 +74,30 @@ const BottomNav = () => {
       {/* 🔹 ACTION MENU (DRAWER) */}
       <div
         className={cn(
-          "fixed z-50 w-full px-6 transition-all duration-300 ease-out",
+          "fixed z-50 w-full transition-all duration-200 linear",
           open
-            ? "bottom-24 translate-y-0 opacity-100"
-            : "bottom-0 translate-y-10 opacity-0 pointer-events-none"
+            ? "top-14 translate-y-0 opacity-100"
+            : "-top-14 translate-y-10 opacity-0 pointer-events-none",
         )}
       >
-        <div className="bg-white rounded-[24px] shadow-2xl border border-neutral-100 p-2 overflow-hidden">
+        <div className="bg-white shadow-2xl border border-neutral-100 p-1.5 overflow-hidden">
           <div className="flex flex-col">
             {sidebar_items
-              .filter((i) => i.section === "main")
+              .filter((i) => i.section === "main" || i.item === "Dashboard")
               .map((item) => (
                 <Link
                   key={item.item}
                   to={item.link}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "flex items-center gap-4 px-6 py-4 rounded-xl transition-colors",
+                    "flex items-center gap-3 px-6 py-4 rounded-xl transition-colors",
                     pathname === item.link
                       ? "bg-primary/5"
-                      : "active:bg-neutral-50"
+                      : "active:bg-neutral-50",
                   )}
                 >
                   <item.icon
-                    size={20}
+                    size={19}
                     className={
                       pathname === item.link
                         ? "text-primary"
@@ -106,7 +110,7 @@ const BottomNav = () => {
                       "m-0 font-bold",
                       pathname === item.link
                         ? "text-primary"
-                        : "text-neutral-600"
+                        : "text-neutral-600",
                     )}
                   >
                     {item.item}
@@ -117,73 +121,33 @@ const BottomNav = () => {
         </div>
       </div>
 
-      {/* 🔹 BOTTOM BAR */}
-      <div className="fixed bottom-6 w-[90%] left-1/2 -translate-x-1/2 bg-white rounded-full shadow-lg border border-neutral-100 z-50 px-2 py-2">
-        <div className="flex justify-around items-center relative">
-          {/* Dashboard Link */}
-          {sidebar_items
-            .filter((i) => i.item === "Dashboard")
-            .map((item) => (
-              <Link
-                to={item.link}
-                key={item.item}
-                className="flex flex-col items-center gap-1 px-4 py-1"
-              >
-                <item.icon
-                  size={20}
-                  className={
-                    pathname === item.link ? "text-primary" : "text-neutral-400"
-                  }
-                />
-                <H6
-                  className={cn(
-                    "text-[10px] m-0",
-                    pathname === item.link ? "text-primary" : "text-neutral-400"
-                  )}
-                >
-                  {item.item}
-                </H6>
-              </Link>
-            ))}
+      <div className="sticky top-0 w-full bg-white border-b border-neutral-100 z-50 px-4 py-3">
+        <div className="flex justify-between items-center relative">
+          <H5 className="tracking-widest font-bold border-none">HOUSECHORES</H5>
 
-          {/* 🔹 CENTER TOGGLE BUTTON */}
-          <div className="relative -top-1">
+          <div className="flex items-center gap-1">
+            {sidebar_items
+              .filter((i) => i.item === "Profile")
+              .map((item) => (
+                <Link
+                  to={item.link}
+                  key={item.item}
+                  className="flex items-center"
+                >
+                  <div className="size-9 flex justify-center items-center rounded-full overflow-hidden border border-neutral-100">
+                    {userData?.name?.[0]?.toUpperCase()}
+                  </div>
+                </Link>
+              ))}
+
+            {/* Hamburger Menu Toggle */}
             <button
               onClick={() => setOpen((prev) => !prev)}
-              className={cn(
-                "p-4 rounded-full text-white shadow-lg transition-transform active:scale-90",
-                "bg-primary" // Using your primary brand color
-              )}
+              className="p-1 text-neutral-800 transition-transform active:scale-95"
             >
-              {open ? <X size={20} /> : <ListPlus size={20} />}
+              {open ? <X size={26} /> : <Menu size={26} strokeWidth={1.5} />}
             </button>
           </div>
-
-          {/* Profile Link */}
-          {sidebar_items
-            .filter((i) => i.item === "Profile")
-            .map((item) => (
-              <Link
-                to={item.link}
-                key={item.item}
-                className="flex flex-col items-center gap-1 px-4 py-1"
-              >
-                <item.icon
-                  size={20}
-                  className={
-                    pathname === item.link ? "text-primary" : "text-neutral-400"
-                  }
-                />
-                <H6
-                  className={cn(
-                    "text-[10px] m-0",
-                    pathname === item.link ? "text-primary" : "text-neutral-400"
-                  )}
-                >
-                  {item.item}
-                </H6>
-              </Link>
-            ))}
         </div>
       </div>
     </div>

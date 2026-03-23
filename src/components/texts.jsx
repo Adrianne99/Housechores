@@ -5,10 +5,10 @@ import { cn } from "../utils/utils";
 const headingClasses = {
   // Mobile (xs) -> Desktop (md+)
   h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-neutral-900",
-  h2: "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0 text-neutral-800",
+  h2: "scroll-m-20 text-3xl font-semibold tracking-tight transition-colors first:mt-0 text-neutral-800",
   h3: "scroll-m-20 text-2xl font-semibold tracking-tight text-neutral-800",
   h4: "scroll-m-20 text-xl font-semibold tracking-tight text-neutral-700",
-  h5: "scroll-m-20 text-lg font-semibold tracking-tight text-neutral-700",
+  h5: "scroll-m-20 text-base font-semibold tracking-tight text-neutral-700",
   h6: "text-sm font-medium leading-none text-neutral-500 uppercase tracking-wider", // Label style
 };
 
@@ -36,7 +36,7 @@ const paragraphClasses = {
   lead: "text-xl text-neutral-500",
   small: "text-sm font-medium leading-none text-neutral-500",
   quote: "mt-6 border-l-2 border-neutral-300 pl-6 italic text-neutral-700",
-  muted: "text-sm text-neutral-500", // Standard Shadcn muted text
+  muted: "text-xs text-neutral-500", // Standard Shadcn muted text
 };
 
 export const Paragraph = ({
@@ -56,7 +56,7 @@ export const Paragraph = ({
         defaultClasses,
         bold && "font-bold",
         italic && "italic",
-        className
+        className,
       )}
       {...props}
     >

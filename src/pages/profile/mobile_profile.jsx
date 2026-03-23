@@ -1,8 +1,8 @@
 import React, { useContext } from "react";
 import { MoveLeft, UserPen, Camera } from "lucide-react";
-import { H2, H3, H4, H6 } from "../../components/texts";
+import { H2, H3, H4, H6 } from "@/components/texts";
 import { Link, useNavigate } from "react-router";
-import { AppContext } from "../../context/app_context";
+import { AppContext } from "@/context/app_context";
 import { History, Bug, Save, ArrowLeftToLine } from "lucide-react";
 import axios from "axios";
 
@@ -49,7 +49,7 @@ const MobileProfile = () => {
       </div>
       <div className="py-8 flex justify-center flex-col items-center space-y-4">
         <div className="relative">
-          <div className="size-25 p-2 text-5xl text-white bg-linear-to-br from-primary via-second-gradient to-third-gradient text-center flex justify-center items-center rounded-full outline-2 outline-black">
+          <div className="size-25 p-2 text-5xl text-white text-center flex justify-center items-center rounded-full outline-2 outline-black">
             {userData?.name?.[0]?.toUpperCase()}
           </div>
           <div className="absolute right-0 top-3/4 -translate-y-1/4 bg-neutral-100 shadow-sm p-1 rounded-full">

@@ -9,7 +9,7 @@ import { Button } from "@/components/buttons";
 import { AppContext } from "@/context/app_context";
 import { cn } from "@/utils/utils";
 import logo from "@/assets/logo.png";
-import Toast from "@/components/Toast"; // Import your new Toast
+import Toast from "@/components/Toast";
 
 // Ensure credentials for session handling
 axios.defaults.withCredentials = true;
@@ -17,6 +17,9 @@ axios.defaults.withCredentials = true;
 const Login = () => {
   const navigate = useNavigate();
   const { BACKEND_URL, setIsLoggedIn, setUserData } = useContext(AppContext);
+
+  // const { fetchData, isloading, isError } = useSampleFetchQuery();
+  // const fetchData = fetchData.data.data;
 
   // Form State
   const [formData, setFormData] = useState({
@@ -104,7 +107,7 @@ const Login = () => {
           message={toast.message}
           type={toast.type}
           duration={5000}
-          onClose={() => setToast({ ...toast, show: false })}
+          onClose={() => setToast({ ...toast, show: true })}
         />
       )}
 
@@ -193,7 +196,7 @@ const Login = () => {
                 "w-full h-12 rounded-lg font-semibold text-white transition-all active:scale-[0.98]",
                 validation.isValid && !uiState.isLoading
                   ? "bg-primary shadow-lg shadow-primary/20"
-                  : "bg-disabled opacity-70 cursor-not-allowed"
+                  : "bg-disabled opacity-70 cursor-not-allowed",
               )}
               disabled={!validation.isValid || uiState.isLoading}
             >
@@ -206,9 +209,9 @@ const Login = () => {
               Don't have an account?{" "}
               <button
                 className="text-primary font-bold hover:underline"
-                onClick={() => navigate("/register")}
+                onClick={() => navigate("/contact")}
               >
-                Register
+                Contact Administrator
               </button>
             </Paragraph>
           </div>

@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { AppContextProvider, AppContext } from "./context/app_context.jsx";
+import { AppContextProvider } from "./context/app_context.jsx";
 import "./index.css";
 import App from "./App.jsx";
 
@@ -9,5 +9,5 @@ createRoot(document.getElementById("root")).render(
     <AppContextProvider>
       <App />
     </AppContextProvider>
-  </StrictMode>
+  </StrictMode>,
 );

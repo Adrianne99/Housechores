@@ -5,21 +5,31 @@ import { AppContext } from "../../context/app_context";
 /**
  * @param {boolean} requireAuth
  */
-const AuthRoute = ({ requireAuth }) => {
-  const { isLoggedIn, loading } = useContext(AppContext);
 
-  if (loading) return null;
+export const AuthRoute = ({ requireAuth, allowedRoles }) => {
+  const { isLoggedIn, loading, userData } = useContext(AppContext);
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  const role = userData?.role;
 
   if (requireAuth && !isLoggedIn) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!requireAuth && isLoggedIn) {
-    return <Navigate to="/dashboard" replace />;
+  if (requireAuth && allowedRoles && !allowedRoles.includes(role)) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
-  // Otherwise, render the child route
+  if (!requireAuth && isLoggedIn) {
+    return <Navigate to={`/dashboard`} replace />;
+  }
+
   return <Outlet />;
 };
-
-export default AuthRoute;

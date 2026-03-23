@@ -10,19 +10,23 @@ import Toast from "@/components/toast";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { cn } from "@/utils/utils";
 import logo from "@/assets/logo.png";
+import { Countdown } from "@/components/timer";
 
 const Reset_password = () => {
   axios.defaults.withCredentials = true;
   const navigate = useNavigate();
   const { BACKEND_URL } = useContext(AppContext);
 
-  // States
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isEmailSent, setIsEmailSent] = useState(false);
   const [isOtpSubmitted, setIsOtpSubmitted] = useState(false);
   const [otp, setOtp] = useState("");
+  const [isTimerActive, setIsTimerActive] = useState(true);
+  const [lastSentTime, setLastSentTime] = useState(0);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const COOLDOWN_TIME = 60000;
 
   const [uiState, setUiState] = useState({
     showPassword: false,
@@ -43,9 +47,45 @@ const Reset_password = () => {
     setToast({ show: true, message, type });
   };
 
-  // STEP 1: Send OTP
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const step = sessionStorage.getItem("reset_step");
+    const savedEmail = sessionStorage.getItem("reset_email");
+    const savedOtp = sessionStorage.getItem("reset_otp");
+    const savedTime = sessionStorage.getItem("last_otp_time");
+
+    if (savedEmail) setEmail(savedEmail);
+    if (savedOtp) setOtp(savedOtp);
+    if (savedTime) setLastSentTime(parseInt(savedTime));
+
+    if (step === "otp") setIsEmailSent(true);
+    if (step === "password") {
+      setIsEmailSent(true);
+      setIsOtpSubmitted(true);
+    }
+  }, []);
+
+  const handleRateLimit = () => {
+    const timePassed = Date.now() - lastSentTime;
+    if (timePassed < COOLDOWN_TIME) {
+      const remaining = Math.ceil((COOLDOWN_TIME - timePassed) / 1000);
+      showToast(
+        `Please wait ${remaining}s before requesting a new code.`,
+        "warning"
+      );
+      return false;
+    }
+    return true;
+  };
+
   const onSubmitEmail = async (e) => {
     e.preventDefault();
+    if (!handleRateLimit()) return;
+
     setUiState((p) => ({ ...p, isLoading: true }));
     try {
       const { data } = await axios.post(
@@ -53,6 +93,10 @@ const Reset_password = () => {
         { email }
       );
       if (!data.success) return showToast(data.message, "error");
+
+      const now = Date.now();
+      setLastSentTime(now);
+      sessionStorage.setItem("last_otp_time", now.toString());
 
       setIsEmailSent(true);
       showToast("OTP sent to your email!");
@@ -65,7 +109,6 @@ const Reset_password = () => {
     }
   };
 
-  // STEP 2: Verify OTP
   const onSubmitOtp = async (e) => {
     e.preventDefault();
     const otpValue = inputRefs.current.map((i) => i?.value || "").join("");
@@ -92,15 +135,44 @@ const Reset_password = () => {
     }
   };
 
-  // STEP 3: Reset Password
+  const resendOtp = async () => {
+    if (isTimerActive || !handleRateLimit()) return;
+
+    setUiState((p) => ({ ...p, isLoading: true }));
+    try {
+      const { data } = await axios.post(
+        `${BACKEND_URL}/api/auth/send-reset-otp`,
+        { email }
+      );
+      if (!data.success) return showToast(data.message, "error");
+
+      const endTime = Date.now() + 300000;
+      sessionStorage.setItem("otp_expiry_time", endTime.toString());
+
+      const now = Date.now();
+      setLastSentTime(now);
+      sessionStorage.setItem("last_otp_time", now.toString());
+
+      setIsTimerActive(true);
+      showToast("OTP Resent!");
+    } catch (err) {
+      showToast("Failed to resend", "error");
+    } finally {
+      setUiState((p) => ({ ...p, isLoading: false }));
+    }
+  };
+
+  const handleGoBackToEmail = () => {
+    setIsEmailSent(false);
+    sessionStorage.removeItem("reset_step");
+  };
+
   const onSubmitNewPassword = async (e) => {
     e.preventDefault();
     if (newPassword.length < 8)
       return showToast("Min 8 characters required", "warning");
-
-    if (newPassword !== confirmNewPassword) {
-      return showToast("Password do not Match.", "warning");
-    }
+    if (newPassword !== confirmNewPassword)
+      return showToast("Passwords do not match", "warning");
 
     setUiState((p) => ({ ...p, isLoading: true }));
     try {
@@ -114,7 +186,7 @@ const Reset_password = () => {
       );
 
       if (!data.success) return showToast(data.message, "error");
-      showToast("Password updated! Redirecting to login...");
+      showToast("Password updated! Redirecting...");
       sessionStorage.clear();
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
@@ -124,22 +196,13 @@ const Reset_password = () => {
     }
   };
 
-  useEffect(() => {
-    const step = sessionStorage.getItem("reset_step");
-    if (sessionStorage.getItem("reset_email"))
-      setEmail(sessionStorage.getItem("reset_email"));
-    if (sessionStorage.getItem("reset_otp"))
-      setOtp(sessionStorage.getItem("reset_otp"));
-    if (step === "otp") setIsEmailSent(true);
-    if (step === "password") {
-      setIsEmailSent(true);
-      setIsOtpSubmitted(true);
-    }
-  }, []);
+  const isLocked = currentTime - lastSentTime < COOLDOWN_TIME;
+  const remainingSeconds = Math.ceil(
+    (COOLDOWN_TIME - (currentTime - lastSentTime)) / 1000
+  );
 
   return (
     <div className="relative min-h-screen bg-background font-inter flex flex-col items-center justify-center p-4 overflow-hidden">
-      {/* Toast Notification */}
       {toast.show && (
         <Toast
           message={toast.message}
@@ -148,19 +211,8 @@ const Reset_password = () => {
         />
       )}
 
-      {/* Decorative Gradients (Matches Register/Login) */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-second-gradient/40 blur-[120px] pointer-events-none" />
-
-      {/* Back Button */}
-      <button
-        onClick={() => navigate("/login")}
-        className="fixed top-6 left-6 z-10 flex items-center gap-2 text-text-muted hover:text-primary transition-colors"
-      >
-        <ArrowLeft size={20} />{" "}
-        <span className="font-medium">Back to Login</span>
-      </button>
-
       <div className="relative z-10 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <img src={logo} alt="Logo" className="w-32 mb-4 object-contain" />
@@ -172,7 +224,6 @@ const Reset_password = () => {
           </Paragraph>
         </div>
 
-        {/* Card Layout */}
         <div className="bg-surface shadow-2xl border border-gray-100 rounded-xl p-6 md:p-8">
           {!isEmailSent && (
             <form
@@ -182,7 +233,7 @@ const Reset_password = () => {
               <TextInput
                 label="Email Address"
                 type="email"
-                placeholder="Farazhaider@gmail.com"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -191,40 +242,72 @@ const Reset_password = () => {
                 variant="primary"
                 type="submit"
                 className="w-full h-12 rounded-lg"
-                disabled={uiState.isLoading}
+                disabled={uiState.isLoading || isLocked}
               >
-                {uiState.isLoading ? "Processing..." : "Send OTP"}
+                {uiState.isLoading
+                  ? "Processing..."
+                  : isLocked
+                  ? `Wait ${remainingSeconds}s`
+                  : "Send OTP"}
               </Button>
             </form>
           )}
 
           {isEmailSent && !isOtpSubmitted && (
-            <form
-              onSubmit={onSubmitOtp}
-              className="space-y-6 animate-in fade-in slide-in-from-bottom-2"
-            >
-              <div className="flex justify-between gap-2" onPaste={handlePaste}>
-                {Array(OTP_LENGTH)
-                  .fill(0)
-                  .map((_, i) => (
-                    <input
-                      key={i}
-                      ref={(el) => (inputRefs.current[i] = el)}
-                      onInput={(e) => handleInput(e, i)}
-                      onKeyDown={(e) => handleKeyDown(e, i)}
-                      className="size-11 text-center font-bold border border-gray-200 rounded-lg focus:border-primary outline-none transition-all"
-                    />
-                  ))}
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div className="text-center">
+                <Paragraph className="text-sm text-text-muted">
+                  Sent to{" "}
+                  <span className="font-bold text-text-main">{email}</span>
+                </Paragraph>
+                <button
+                  onClick={handleGoBackToEmail}
+                  className="text-xs text-primary hover:underline font-medium mt-1"
+                >
+                  Change email?
+                </button>
               </div>
-              <Button
-                variant="primary"
-                type="submit"
-                className="w-full h-12 rounded-lg"
-                disabled={uiState.isLoading}
-              >
-                {uiState.isLoading ? "Verifying..." : "Verify Code"}
-              </Button>
-            </form>
+              <form onSubmit={onSubmitOtp} className="space-y-6">
+                <div
+                  className="flex justify-between gap-2"
+                  onPaste={handlePaste}
+                >
+                  {Array(OTP_LENGTH)
+                    .fill(0)
+                    .map((_, i) => (
+                      <input
+                        key={i}
+                        ref={(el) => (inputRefs.current[i] = el)}
+                        onInput={(e) => handleInput(e, i)}
+                        onKeyDown={(e) => handleKeyDown(e, i)}
+                        className="size-11 text-center font-bold border border-gray-200 rounded-lg focus:border-primary outline-none transition-all"
+                      />
+                    ))}
+                </div>
+                <div className="text-sm">
+                  <span
+                    className={cn(
+                      "inline-flex font-medium transition-all",
+                      isTimerActive || isLocked
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer text-primary hover:underline"
+                    )}
+                    onClick={resendOtp}
+                  >
+                    {isTimerActive ? "Resend in " : "Resend code"}
+                    <Countdown onComplete={() => setIsTimerActive(false)} />
+                  </span>
+                </div>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  className="w-full h-12 rounded-lg"
+                  disabled={uiState.isLoading}
+                >
+                  {uiState.isLoading ? "Verifying..." : "Verify Code"}
+                </Button>
+              </form>
+            </div>
           )}
 
           {isOtpSubmitted && (
@@ -256,7 +339,7 @@ const Reset_password = () => {
               </div>
               <div className="relative">
                 <TextInput
-                  label="Confirm new Password"
+                  label="Confirm Password"
                   type={uiState.showPassword ? "text" : "password"}
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
