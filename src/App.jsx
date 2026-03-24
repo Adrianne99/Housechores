@@ -14,9 +14,7 @@ import { AppContext, AppContextProvider } from "./context/app_context";
 import { useIsMobile } from "./hooks/use_is_mobile";
 import Sidebar from "./components/sidebar";
 
-// ✅ All lazy
 const Navigation = lazy(() => import("./components/navbar"));
-const Footer = lazy(() => import("./components/footer"));
 const Hero = lazy(() => import("./pages/hero"));
 const Register = lazy(() => import("./pages/auth/register"));
 const Login = lazy(() => import("./pages/auth/login"));
@@ -24,10 +22,7 @@ const Email_verification = lazy(
   () => import("./pages/auth/email_verification"),
 );
 const Reset_password = lazy(() => import("./pages/auth/reset_password"));
-const Admin_Dashboard = lazy(() => import("./pages/dashboard/admin/dashboard"));
-const Employee_Dashboard = lazy(
-  () => import("./pages/dashboard/employee/dashboard"),
-);
+const Dashboard = lazy(() => import("./pages/dashboard/dashboard"));
 const BudgetPlanner = lazy(() => import("./pages/dashboard/budget_planner"));
 const CalorieCounter = lazy(() => import("./pages/dashboard/calorie_counter"));
 const Documentation = lazy(() => import("./pages/dashboard/documentation"));
@@ -35,25 +30,25 @@ const MobileProfile = lazy(() => import("./pages/profile/mobile_profile"));
 const DesktopProfile = lazy(() => import("./pages/profile/desktop_profile"));
 const Edit_profile = lazy(() => import("./pages/profile/edit_profile"));
 const Todo = lazy(() => import("./pages/dashboard/todo"));
-const SavingsTracker = lazy(() => import("./pages/dashboard/savings_tracker")); // ✅ was eagerly imported
+const SavingsTracker = lazy(() => import("./pages/dashboard/savings_tracker"));
 
+const BACKEND_URL = "http://localhost:4000";
+
+// ✅ Single request — is-auth returns userData directly
 const authLoader = async () => {
-  const BACKEND_URL = "http://localhost:4000";
   axios.defaults.withCredentials = true;
   try {
-    const { data } = await axios.get(`${BACKEND_URL}/api/auth/is-auth`, {
-      withCredentials: true,
-    });
+    const { data } = await axios.get(`${BACKEND_URL}/api/auth/is-auth`);
     if (data.success) {
-      const res = await axios.get(`${BACKEND_URL}/api/user/data`);
-      return { isLoggedIn: true, userData: res.data.userData };
+      return { isLoggedIn: true, userData: data.userData };
     }
     return { isLoggedIn: false, userData: null };
-  } catch (error) {
+  } catch {
     return { isLoggedIn: false, userData: null };
   }
 };
 
+// ✅ Redirects to the correct dashboard based on role
 const DashboardRedirect = () => {
   const { userData } = useContext(AppContext);
   if (userData?.role === "admin")
@@ -68,7 +63,6 @@ const App_layout = () => (
     <div className="bg-white w-full h-fit relative">
       <Navigation />
       <Outlet />
-      {/* <Footer /> */}
     </div>
   </div>
 );
@@ -93,7 +87,6 @@ const Dashboard_layout = () => (
           />
           <div className="relative z-10 max-w-[1500px] mx-auto w-full">
             <Outlet />
-            {/* <Footer /> */}
           </div>
         </div>
       </main>
@@ -101,7 +94,6 @@ const Dashboard_layout = () => (
   </div>
 );
 
-// ✅ ProfileGate no longer wraps Dashboard_layout manually — it's handled via the route tree
 const ProfileGate = () => {
   const isMobile = useIsMobile();
   return isMobile ? <MobileProfile /> : <DesktopProfile />;
@@ -130,19 +122,43 @@ const router = createBrowserRouter(
       loader={authLoader}
       HydrateFallback={HydrateFallback}
     >
+      {/* Public pages */}
       <Route element={<App_layout />}>
         <Route index element={<Hero />} />
       </Route>
 
+      {/* Guest-only pages (redirect to dashboard if already logged in) */}
+      <Route element={<AuthRoute requireAuth={false} />}>
+        <Route
+          path="login"
+          element={
+            <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
+              <Login />
+            </div>
+          }
+        />
+        <Route
+          path="register"
+          element={
+            <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
+              <Register />
+            </div>
+          }
+        />
+        <Route path="reset-password" element={<Reset_password />} />
+      </Route>
+
+      {/* Protected pages (must be logged in) */}
       <Route element={<AuthRoute requireAuth={true} />}>
+        {/* Smart redirect: /dashboard → /dashboard/admin or /dashboard/employee */}
         <Route path="dashboard" element={<DashboardRedirect />} />
 
-        {/* ADMIN */}
+        {/* ADMIN routes */}
         <Route
           element={<AuthRoute requireAuth={true} allowedRoles={["admin"]} />}
         >
           <Route element={<Dashboard_layout />}>
-            <Route path="dashboard/admin" element={<Admin_Dashboard />} />
+            <Route path="dashboard/admin" element={<Dashboard />} />
             <Route
               path="dashboard/admin/budget-planner"
               element={<BudgetPlanner />}
@@ -160,49 +176,29 @@ const router = createBrowserRouter(
               path="dashboard/admin/documentation"
               element={<Documentation />}
             />
-            <Route path="profile" element={<ProfileGate />} />{" "}
-            {/* ✅ Desktop profile gets Dashboard_layout via route */}
           </Route>
         </Route>
 
-        {/* EMPLOYEE */}
+        {/* EMPLOYEE routes */}
         <Route
           element={<AuthRoute requireAuth={true} allowedRoles={["employee"]} />}
         >
           <Route element={<Dashboard_layout />}>
-            <Route path="dashboard/employee" element={<Employee_Dashboard />} />
+            <Route path="dashboard/employee" element={<Dashboard />} />
             <Route path="dashboard/employee/todo-app" element={<Todo />} />
             <Route
               path="dashboard/employee/calorie-counter"
               element={<CalorieCounter />}
             />
-            <Route path="profile" element={<ProfileGate />} />{" "}
-            {/* ✅ Same for employee */}
           </Route>
         </Route>
 
-        <Route path="edit-profile" element={<Edit_profile />} />
-        <Route path="verify-account" element={<Email_verification />} />
-      </Route>
-
-      <Route element={<AuthRoute requireAuth={false} />}>
-        <Route
-          path="register"
-          element={
-            <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
-              <Register />
-            </div>
-          }
-        />
-        <Route
-          path="login"
-          element={
-            <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
-              <Login />
-            </div>
-          }
-        />
-        <Route path="reset-password" element={<Reset_password />} />
+        {/* Shared protected routes (any logged-in role) */}
+        <Route element={<Dashboard_layout />}>
+          <Route path="profile" element={<ProfileGate />} />
+          <Route path="edit-profile" element={<Edit_profile />} />
+          <Route path="verify-account" element={<Email_verification />} />
+        </Route>
       </Route>
     </Route>,
   ),

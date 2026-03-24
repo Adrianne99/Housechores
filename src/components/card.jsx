@@ -53,3 +53,20 @@ export const ChartCard = ({}) => {
     </div>
   );
 };
+
+export const StocksCard = ({}) => {
+  return (
+    <div className="bg-white w-full h-full p-6 rounded-xl shadow-sm flex flex-col justify-between">
+      <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start">
+          <H6 className="text-gray-500 font-medium uppercase tracking-wider">
+            Low Stock Items
+          </H6>
+        </div>
+        <table>
+          <thead></thead>
+        </table>
+      </div>
+    </div>
+  );
+};
