@@ -33,7 +33,6 @@ export const Button = ({
   inline-flex items-center justify-center
    shadow-sm
   transition-all duration-200 ease-in-out
-  w-full
   font-inter
   focus:outline-none
   focus:ring-4 focus:ring-indigo-300/40
@@ -47,7 +46,7 @@ export const Button = ({
     : "active:scale-[0.98]";
 
   const classes = [baseClasses, variantStyle, sizeStyle, disabledClasses].join(
-    " "
+    " ",
   );
 
   return (

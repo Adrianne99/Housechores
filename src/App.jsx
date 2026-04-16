@@ -14,6 +14,7 @@ import { AppContext, AppContextProvider } from "./context/app_context";
 import { useIsMobile } from "./hooks/use_is_mobile";
 import Sidebar from "./components/sidebar";
 
+const Pos = lazy(() => import("./pages/pos/pos"));
 const Navigation = lazy(() => import("./components/navbar"));
 const Hero = lazy(() => import("./pages/hero"));
 const Register = lazy(() => import("./pages/auth/register"));
@@ -23,7 +24,7 @@ const Email_verification = lazy(
 );
 const Reset_password = lazy(() => import("./pages/auth/reset_password"));
 const Dashboard = lazy(() => import("./pages/dashboard/dashboard"));
-const BudgetPlanner = lazy(() => import("./pages/dashboard/budget_planner"));
+const Inventory = lazy(() => import("./pages/dashboard/inventory"));
 const CalorieCounter = lazy(() => import("./pages/dashboard/calorie_counter"));
 const Documentation = lazy(() => import("./pages/dashboard/documentation"));
 const MobileProfile = lazy(() => import("./pages/profile/mobile_profile"));
@@ -159,11 +160,9 @@ const router = createBrowserRouter(
         >
           <Route element={<Dashboard_layout />}>
             <Route path="dashboard/admin" element={<Dashboard />} />
-            <Route
-              path="dashboard/admin/budget-planner"
-              element={<BudgetPlanner />}
-            />
+            <Route path="dashboard/admin/inventory" element={<Inventory />} />
             <Route path="dashboard/admin/todo-app" element={<Todo />} />
+            <Route path="dashboard/admin/pos" element={<Pos />} />
             <Route
               path="dashboard/admin/calorie-counter"
               element={<CalorieCounter />}

@@ -80,8 +80,8 @@ const Navigation = () => {
     },
     { item: "Todo", link: "/todo-app", icon: Scroll, category: "Features" },
     {
-      item: "Budget",
-      link: "/budget-planner",
+      item: "Inventory",
+      link: "/Inventory",
       icon: NotebookText,
       category: "Features",
     },
@@ -137,7 +137,7 @@ const Navigation = () => {
           "flex items-center gap-4 p-3 rounded-2xl transition-all active:scale-[0.98]",
           isActive
             ? "bg-neutral-100 text-black"
-            : "hover:bg-neutral-50 text-neutral-500"
+            : "hover:bg-neutral-50 text-neutral-500",
         )}
       >
         {item.icon && (
@@ -149,7 +149,7 @@ const Navigation = () => {
         <span
           className={cn(
             "font-semibold",
-            isActive ? "text-black" : "text-neutral-600"
+            isActive ? "text-black" : "text-neutral-600",
           )}
         >
           {item.item}
@@ -177,13 +177,15 @@ const Navigation = () => {
                   <H5
                     className={cn(
                       "hover:text-black transition-colors m-0 normal-case font-semibold",
-                      pathname === item.link ? "text-black" : "text-neutral-500"
+                      pathname === item.link
+                        ? "text-black"
+                        : "text-neutral-500",
                     )}
                   >
                     {item.item}
                   </H5>
                 </Link>
-              )
+              ),
             )}
           </div>
 
@@ -229,13 +231,13 @@ const Navigation = () => {
       <div
         className={cn(
           "fixed inset-0 z-40 md:hidden transition-all duration-300",
-          open ? "visible" : "invisible"
+          open ? "visible" : "invisible",
         )}
       >
         <div
           className={cn(
             "absolute inset-0 bg-black/80 transition-opacity",
-            open ? "opacity-100" : "opacity-0"
+            open ? "opacity-100" : "opacity-0",
           )}
           onClick={() => setOpen(false)}
         />
@@ -243,7 +245,7 @@ const Navigation = () => {
         <div
           className={cn(
             "absolute bottom-0 w-full bg-white rounded-t-[2.5rem] p-6 max-h-[85vh] overflow-y-auto transition-transform duration-300 transform",
-            open ? "translate-y-0" : "translate-y-full"
+            open ? "translate-y-0" : "translate-y-full",
           )}
         >
           <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-6" />

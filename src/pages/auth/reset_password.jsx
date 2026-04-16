@@ -75,7 +75,7 @@ const Reset_password = () => {
       const remaining = Math.ceil((COOLDOWN_TIME - timePassed) / 1000);
       showToast(
         `Please wait ${remaining}s before requesting a new code.`,
-        "warning"
+        "warning",
       );
       return false;
     }
@@ -90,7 +90,7 @@ const Reset_password = () => {
     try {
       const { data } = await axios.post(
         `${BACKEND_URL}/api/auth/send-reset-otp`,
-        { email }
+        { email },
       );
       if (!data.success) return showToast(data.message, "error");
 
@@ -119,7 +119,7 @@ const Reset_password = () => {
     try {
       const { data } = await axios.post(
         `${BACKEND_URL}/api/auth/verify-reset-otp`,
-        { otp: otpValue }
+        { otp: otpValue },
       );
       if (!data.success) return showToast(data.message, "error");
 
@@ -142,7 +142,7 @@ const Reset_password = () => {
     try {
       const { data } = await axios.post(
         `${BACKEND_URL}/api/auth/send-reset-otp`,
-        { email }
+        { email },
       );
       if (!data.success) return showToast(data.message, "error");
 
@@ -182,7 +182,7 @@ const Reset_password = () => {
           email,
           otp,
           new_password: newPassword,
-        }
+        },
       );
 
       if (!data.success) return showToast(data.message, "error");
@@ -198,7 +198,7 @@ const Reset_password = () => {
 
   const isLocked = currentTime - lastSentTime < COOLDOWN_TIME;
   const remainingSeconds = Math.ceil(
-    (COOLDOWN_TIME - (currentTime - lastSentTime)) / 1000
+    (COOLDOWN_TIME - (currentTime - lastSentTime)) / 1000,
   );
 
   return (
@@ -247,8 +247,8 @@ const Reset_password = () => {
                 {uiState.isLoading
                   ? "Processing..."
                   : isLocked
-                  ? `Wait ${remainingSeconds}s`
-                  : "Send OTP"}
+                    ? `Wait ${remainingSeconds}s`
+                    : "Send OTP"}
               </Button>
             </form>
           )}
@@ -290,7 +290,7 @@ const Reset_password = () => {
                       "inline-flex font-medium transition-all",
                       isTimerActive || isLocked
                         ? "opacity-50 cursor-not-allowed"
-                        : "cursor-pointer text-primary hover:underline"
+                        : "cursor-pointer text-primary hover:underline",
                     )}
                     onClick={resendOtp}
                   >

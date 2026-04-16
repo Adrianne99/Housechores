@@ -37,8 +37,8 @@ const BottomNav = () => {
     },
     { item: "Todo App", link: "/todo-app", icon: Scroll, section: "main" },
     {
-      item: "Budget Planner",
-      link: "/budget-planner",
+      item: "Inventory",
+      link: "/inventory",
       icon: NotebookText,
       section: "main",
     },

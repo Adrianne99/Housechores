@@ -20,7 +20,6 @@ import {
 import { cn } from "@/utils/utils";
 import Tooltip from "./tooltip";
 
-// 1. Single Source of Truth for Menu Items
 const MENU_CONFIG = [
   {
     item: "Dashboard",
@@ -44,7 +43,7 @@ const MENU_CONFIG = [
     roles: ["admin", "employee"],
   },
   {
-    item: "AI Insights",
+    item: "Operation Expenses",
     link: "/ai-analytics",
     icon: Zap,
     section: "main",

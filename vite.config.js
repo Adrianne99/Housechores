@@ -11,4 +11,12 @@ export default defineConfig({
       // Add more aliases as needed
     },
   },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:4000", // ← change to your backend port
+        changeOrigin: true,
+      },
+    },
+  },
 });
