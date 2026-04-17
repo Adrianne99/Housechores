@@ -4,6 +4,12 @@ import { ArrowLeftRight, Pencil, Trash2, TrendingUp } from "lucide-react"; // Ad
 import { sortProducts } from "../utils/sort";
 import { StockBadge } from "./badge";
 import { useDebounce } from "../hooks/use_debounce";
+import { Edit_Product_Modal } from "./modal";
+import { EditableBarcode } from "./editable_barcode";
+import { EditableCategory } from "./editable_category";
+import { EditableStock } from "./editable_unit";
+import { EditableName } from "./editable_name";
+import { EditablePrice } from "./editable_price";
 
 export const DashboardCard = ({ title, card_icon, sign, value }) => {
   return (
@@ -55,18 +61,17 @@ export const ChartCard = ({}) => {
 };
 
 const QuantityControl = ({ product_id, value, onChange }) => {
-  const update_stock = useDebounce(async (new_value) => {
+  const update_stock = useDebounce(async (id, newValue) => {
     try {
-      const res = await fetch(`/api/products/${product_id}/stock`, {
+      const res = await fetch(`/api/products/${id}/stock`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ current_stock: new_value }),
+        body: JSON.stringify({ current_stock: newValue }),
       });
-
       const data = await res.json();
-      if (!data.success) console.error("Stock update Failed:", data.message);
-    } catch (error) {
-      console.error("Stock update", error);
+      if (!data.success) console.error("Stock update failed:", data.message);
+    } catch (err) {
+      console.error("Stock update error:", err);
     }
   }, 600);
 
@@ -99,13 +104,13 @@ export const StocksCard = ({ filter, columns, refresh }) => {
   const [quantities, setQuantities] = useState({});
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState([]);
+  const [editProduct, setEditProduct] = useState(null);
 
   useEffect(() => {
     const fetch_products = async () => {
       try {
         const res = await fetch("/api/products");
         const data = await res.json();
-        console.log("products:", data.products);
         setProducts(data.products);
         const initial = {};
         data.products.forEach((product) => {
@@ -210,57 +215,116 @@ export const StocksCard = ({ filter, columns, refresh }) => {
                     </td>
 
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900 whitespace-nowrap">
-                        {product.name}
-                      </p>
-                      <p className="text-xs text-gray-400">{product.brand}</p>
+                      <EditableName
+                        productId={product._id}
+                        name={product.name}
+                        brand={product.brand}
+                        onUpdate={({ name, brand }) =>
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p._id === product._id ? { ...p, name, brand } : p,
+                            ),
+                          )
+                        }
+                      />
                     </td>
 
                     <td className="px-4 py-3">
-                      <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                        {product.barcode}
-                      </span>
+                      <EditableBarcode
+                        productId={product._id}
+                        barcode={product.barcode}
+                        onUpdate={(newBarcode) =>
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p._id === product._id
+                                ? { ...p, barcode: newBarcode }
+                                : p,
+                            ),
+                          )
+                        }
+                      />
                     </td>
 
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-600 font-medium whitespace-nowrap">
-                        {product.category}
-                      </span>
+                      <EditableCategory
+                        productId={product._id}
+                        category={product.category}
+                        onUpdate={(newCategory) =>
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p._id === product._id
+                                ? { ...p, category: newCategory }
+                                : p,
+                            ),
+                          )
+                        }
+                      />
                     </td>
 
                     <td className="px-4 py-3">
                       <StockBadge
-                        current={product.stock_management.current_stock}
+                        current={
+                          quantities[product._id] ??
+                          product.stock_management.current_stock
+                        }
                         reorder={product.stock_management.reorder_level}
                       />
                     </td>
 
                     <td className="px-4 py-3">
-                      <QuantityControl
-                        product_id={product._id}
-                        value={
-                          quantities[product._id] ??
-                          product.stock_management.current_stock
-                        }
-                        onChange={(val) =>
+                      <EditableStock
+                        productId={product._id}
+                        stock_management={product.stock_management}
+                        onUpdate={(updated) => {
                           setQuantities((prev) => ({
                             ...prev,
-                            [product._id]: val,
-                          }))
-                        }
+                            [product._id]: Number(updated.current_stock),
+                          }));
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p._id === product._id
+                                ? {
+                                    ...p,
+                                    stock_management: {
+                                      ...p.stock_management,
+                                      ...updated,
+                                    },
+                                  }
+                                : p,
+                            ),
+                          );
+                        }}
                       />
                     </td>
 
                     <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
-                      ₱ {product.pricing.selling_price.toFixed(2)}
+                      <EditablePrice
+                        productId={product._id}
+                        pricing={product.pricing}
+                        onUpdate={(updated) =>
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p._id === product._id
+                                ? {
+                                    ...p,
+                                    pricing: { ...p.pricing, ...updated },
+                                  }
+                                : p,
+                            ),
+                          )
+                        }
+                      />
                     </td>
 
                     {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
+                        {/* <button
+                          className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                          onClick={() => setEditProduct(product)}
+                        >
                           <Pencil size={15} />
-                        </button>
+                        </button> */}
                         <button className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
                           <Trash2 size={15} />
                         </button>
@@ -273,6 +337,7 @@ export const StocksCard = ({ filter, columns, refresh }) => {
                 ))}
           </tbody>
         </table>
+
         {!loading && sorted.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <p className="text-4xl mb-2">📦</p>

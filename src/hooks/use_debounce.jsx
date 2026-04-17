@@ -1,17 +1,18 @@
-import { useRef, useCallback } from "react";
+import { useRef } from "react";
 
 export const useDebounce = (fn, delay = 600) => {
   const timerRef = useRef(null);
+  const fnRef = useRef(fn);
 
-  const debounced = useCallback(
-    (...args) => {
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        fn(...args);
-      }, delay);
-    },
-    [fn, delay],
-  );
+  // Keep fnRef current without causing re-renders
+  fnRef.current = fn;
 
-  return debounced;
+  const debounced = useRef((...args) => {
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      fnRef.current(...args);
+    }, delay);
+  });
+
+  return debounced.current;
 };
