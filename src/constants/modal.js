@@ -22,7 +22,8 @@ export const COLUMNS = [
   { key: "barcode", label: "Barcode" },
   { key: "category", label: "Category" },
   { key: "stock_level", label: "Stock Level" },
-  { key: "unit", label: "Unit" },
+  { key: "unit", label: "Quantity" },
+  { key: "supplier", label: "Supplier" },
   { key: "selling_price", label: "Selling Price" },
   { key: "actions", label: "Actions" },
 ];

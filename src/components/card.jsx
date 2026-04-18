@@ -10,6 +10,7 @@ import { EditableCategory } from "./editable_category";
 import { EditableStock } from "./editable_unit";
 import { EditableName } from "./editable_name";
 import { EditablePrice } from "./editable_price";
+import { EditableSupplier } from "./editable_supplier";
 
 export const DashboardCard = ({ title, card_icon, sign, value }) => {
   return (
@@ -99,32 +100,33 @@ const QuantityControl = ({ product_id, value, onChange }) => {
   );
 };
 
-export const StocksCard = ({ filter, columns, refresh }) => {
+export const StocksCard = ({ filter, columns, refresh, onProductsLoaded }) => {
   const [products, setProducts] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState([]);
   const [editProduct, setEditProduct] = useState(null);
 
-  useEffect(() => {
-    const fetch_products = async () => {
-      try {
-        const res = await fetch("/api/products");
-        const data = await res.json();
-        setProducts(data.products);
-        const initial = {};
-        data.products.forEach((product) => {
-          initial[product._id] = product.stock_management.current_stock;
-        });
-        setQuantities(initial);
-      } catch (error) {
-        console.log("error:", error);
-      } finally {
-        console.log("finally reached"); // ← check this prints
-        setLoading(false);
-      }
-    };
+  const fetch_products = async () => {
+    try {
+      const res = await fetch("/api/products");
+      const data = await res.json();
+      setProducts(data.products);
+      onProductsLoaded?.(data.products);
+      const initial = {};
+      data.products.forEach((product) => {
+        initial[product._id] = product.stock_management.current_stock;
+      });
+      setQuantities(initial);
+    } catch (error) {
+      console.log("error:", error);
+    } finally {
+      console.log("finally reached"); // ← check this prints
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetch_products();
   }, [refresh]);
 
@@ -140,11 +142,26 @@ export const StocksCard = ({ filter, columns, refresh }) => {
         : products.map((product) => product._id),
     );
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this product?"))
+      return;
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      console.log("Deleted — refetching...");
+      await fetch_products();
+      console.log("Refetch done");
+    } catch (err) {
+      console.error("Delete failed:", err.message);
+    }
+  };
+
   const sorted = sortProducts(products, filter);
 
   return (
     <div className="bg-white w-full h-full p-6 rounded-xl shadow-sm flex flex-col justify-between">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto min-w-[900px]">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -297,6 +314,28 @@ export const StocksCard = ({ filter, columns, refresh }) => {
                       />
                     </td>
 
+                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                      <EditableSupplier
+                        productId={product._id}
+                        supplier={product.stock_management.supplier}
+                        onUpdate={(newSupplier) =>
+                          setProducts((prev) =>
+                            prev.map((p) =>
+                              p._id === product._id
+                                ? {
+                                    ...p,
+                                    stock_management: {
+                                      ...p.stock_management,
+                                      supplier: newSupplier,
+                                    },
+                                  }
+                                : p,
+                            ),
+                          )
+                        }
+                      />
+                    </td>
+
                     <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
                       <EditablePrice
                         productId={product._id}
@@ -325,7 +364,12 @@ export const StocksCard = ({ filter, columns, refresh }) => {
                         >
                           <Pencil size={15} />
                         </button> */}
-                        <button className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
+                        <button
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                          onClick={() => {
+                            handleDelete(product._id);
+                          }}
+                        >
                           <Trash2 size={15} />
                         </button>
                         <button className="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors">
