@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 
 export const FILTER_OPTIONS = [
-  { label: "Latest", value: "default", Icon: ArrowUp },
   { label: "Alphabetical", value: "alphabetical", Icon: ArrowDownAZ },
   { label: "Lowest Quantity", value: "qty_asc", Icon: ArrowDownNarrowWide },
   { label: "Highest Quantity", value: "qty_desc", Icon: ArrowDownWideNarrow },

@@ -100,7 +100,14 @@ const QuantityControl = ({ product_id, value, onChange }) => {
   );
 };
 
-export const StocksCard = ({ filter, columns, refresh, onProductsLoaded }) => {
+export const StocksCard = ({
+  filter,
+  columns,
+  refresh,
+  onProductsLoaded,
+  onCheckedChange,
+  onProductsChange,
+}) => {
   const [products, setProducts] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [loading, setLoading] = useState(true);
@@ -121,20 +128,20 @@ export const StocksCard = ({ filter, columns, refresh, onProductsLoaded }) => {
     } catch (error) {
       console.log("error:", error);
     } finally {
-      console.log("finally reached"); // ← check this prints
       setLoading(false);
     }
   };
 
   useEffect(() => {
     fetch_products();
-  }, [refresh]);
+    onCheckedChange?.(selected);
+    onProductsChange?.(products);
+  }, [refresh, selected, products]);
 
   const toggleSelect = (id) =>
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
-
   const toggleAll = () =>
     setSelected(
       selected.length === products.length

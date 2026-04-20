@@ -10,8 +10,10 @@ export const EditablePrice = ({ productId, pricing, onUpdate }) => {
   const modalRef = useRef(null);
 
   useEffect(() => {
-    setForm(pricing);
-  }, [pricing]);
+    if (!editing) {
+      setForm(pricing);
+    }
+  }, [pricing, editing]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {

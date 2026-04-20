@@ -1,5 +1,5 @@
 export const sortProducts = (products, filter) => {
-  if (filter || filter === "default") return products;
+  if (!filter || filter === "default") return products;
   return [...products].sort((a, b) => {
     switch (filter) {
       case "alphabetical":
