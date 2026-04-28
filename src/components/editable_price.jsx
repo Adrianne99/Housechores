@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Check, Pencil, X } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import { Button } from "./buttons";
+import axios from "axios";
 
 export const EditablePrice = ({ productId, pricing, onUpdate }) => {
   const [editing, setEditing] = useState(false);
@@ -10,10 +11,8 @@ export const EditablePrice = ({ productId, pricing, onUpdate }) => {
   const modalRef = useRef(null);
 
   useEffect(() => {
-    if (!editing) {
-      setForm(pricing);
-    }
-  }, [pricing, editing]);
+    setForm(pricing);
+  }, [pricing]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -41,27 +40,26 @@ export const EditablePrice = ({ productId, pricing, onUpdate }) => {
     });
   };
 
+  const handleClose = () => {
+    setEditing(false);
+    setForm(pricing);
+    setError(null);
+  };
+
   const handleSave = async () => {
     if (!form.cost_per_unit || !form.markup_value) {
-      setError("Cost per unit and markup are required.");
-      return;
+      return setError("Cost per unit and markup are required.");
     }
     setLoading(true);
     try {
-      const res = await fetch(`/api/products/${productId}/price`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cost_per_unit: Number(form.cost_per_unit),
-          markup_value: Number(form.markup_value),
-          selling_price: Number(form.selling_price),
-        }),
+      const { data } = await axios.patch(`/api/products/${productId}/pricing`, {
+        cost_per_unit: Number(form.cost_per_unit),
+        markup_value: Number(form.markup_value),
+        selling_price: Number(form.selling_price),
       });
-      const data = await res.json();
       if (!data.success) throw new Error(data.message);
       onUpdate(form);
-      setEditing(false);
-      setError(null);
+      handleClose();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -71,7 +69,6 @@ export const EditablePrice = ({ productId, pricing, onUpdate }) => {
 
   return (
     <>
-      {/* Trigger */}
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
           ₱ {Number(form.selling_price).toFixed(2)}
@@ -84,84 +81,61 @@ export const EditablePrice = ({ productId, pricing, onUpdate }) => {
         </button>
       </div>
 
-      {/* Modal */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/20 backdrop-blur-sm"
-            onClick={() => {
-              setEditing(false);
-              setForm(pricing);
-            }}
+            onClick={handleClose}
           />
           <div
             ref={modalRef}
             className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs mx-4 overflow-hidden"
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div>
                 <p className="text-sm font-bold text-gray-900">Edit Pricing</p>
                 <p className="text-xs text-gray-400">Update cost and markup</p>
               </div>
               <button
-                onClick={() => {
-                  setEditing(false);
-                  setForm(pricing);
-                }}
+                onClick={handleClose}
                 className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors"
               >
                 <X size={16} />
               </button>
             </div>
-
-            {/* Fields */}
             <div className="px-5 py-4 flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Cost per Unit <span className="text-red-400">*</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                    ₱
-                  </span>
-                  <input
-                    type="number"
-                    value={form.cost_per_unit}
-                    onChange={(e) =>
-                      handlePricingChange("cost_per_unit", e.target.value)
-                    }
-                    className="w-full pl-7 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all"
-                  />
+              {[
+                { label: "Cost per Unit", field: "cost_per_unit", prefix: "₱" },
+                { label: "Markup %", field: "markup_value", suffix: "%" },
+              ].map(({ label, field, prefix, suffix }) => (
+                <div key={field} className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    {label} <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    {prefix && (
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                        {prefix}
+                      </span>
+                    )}
+                    <input
+                      type="number"
+                      value={form[field]}
+                      onChange={(e) =>
+                        handlePricingChange(field, e.target.value)
+                      }
+                      className={`w-full ${prefix ? "pl-7" : "pl-3"} ${suffix ? "pr-8" : "pr-3"} py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all`}
+                    />
+                    {suffix && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                        {suffix}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Markup % <span className="text-red-400">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={form.markup_value}
-                    onChange={(e) =>
-                      handlePricingChange("markup_value", e.target.value)
-                    }
-                    className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                    %
-                  </span>
-                </div>
-              </div>
-
-              {/* Selling price preview */}
+              ))}
               <div
-                className={`rounded-xl p-4 border transition-all ${
-                  form.selling_price
-                    ? "bg-indigo-50 border-indigo-200"
-                    : "bg-gray-50 border-gray-200"
-                }`}
+                className={`rounded-xl p-4 border transition-all ${form.selling_price ? "bg-indigo-50 border-indigo-200" : "bg-gray-50 border-gray-200"}`}
               >
                 <p className="text-xs text-gray-500 mb-1">
                   Computed Selling Price
@@ -177,31 +151,25 @@ export const EditablePrice = ({ productId, pricing, onUpdate }) => {
                   </p>
                 )}
               </div>
-
               {error && (
                 <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">
                   ⚠ {error}
                 </p>
               )}
             </div>
-
-            {/* Footer */}
             <div className="px-5 py-4 border-t border-gray-100 flex gap-2">
               <Button
                 variant="secondary"
                 size="md"
-                className="w-full"
-                onClick={() => {
-                  setEditing(false);
-                  setForm(pricing);
-                }}
+                className="w-full!"
+                onClick={handleClose}
               >
                 Cancel
               </Button>
               <Button
                 variant="primary"
                 size="md"
-                className="w-full"
+                className="w-full!"
                 onClick={handleSave}
                 disabled={loading}
               >

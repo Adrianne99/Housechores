@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Store, Plus, Trash2, X, Check } from "lucide-react";
 import { Button } from "./buttons";
+import axios from "axios";
 
 export const BranchDropdown = ({ onBranchSelect }) => {
   const [open, setOpen] = useState(false);
@@ -30,8 +31,7 @@ export const BranchDropdown = ({ onBranchSelect }) => {
 
   const fetch_branches = async () => {
     try {
-      const res = await fetch("/api/branches");
-      const data = await res.json();
+      const { data } = await axios.get("/api/branches");
       if (data.success) setBranches(data.branches);
     } catch (err) {
       console.error(err);
@@ -45,12 +45,7 @@ export const BranchDropdown = ({ onBranchSelect }) => {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/branches", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
+      const { data } = await axios.post("/api/branches", form);
       if (!data.success) throw new Error(data.message);
       setBranches((prev) => [...prev, data.branch]);
       setForm({ name: "", address: "" });
@@ -66,8 +61,7 @@ export const BranchDropdown = ({ onBranchSelect }) => {
   const handleDelete = async (id, e) => {
     e.stopPropagation();
     try {
-      const res = await fetch(`/api/branches/${id}`, { method: "DELETE" });
-      const data = await res.json();
+      const { data } = await axios.delete(`/api/branches/${id}`);
       if (!data.success) throw new Error(data.message);
       setBranches((prev) => prev.filter((b) => b._id !== id));
       if (selected?._id === id) {

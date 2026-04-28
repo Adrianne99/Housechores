@@ -2,6 +2,7 @@ import { CATEGORIES } from "../constants/modal";
 import { Pencil, Check } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import axios from "axios";
 
 export const EditableCategory = ({ productId, category, onUpdate }) => {
   const [editing, setEditing] = useState(false);
@@ -33,28 +34,37 @@ export const EditableCategory = ({ productId, category, onUpdate }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [category]);
 
+  useEffect(() => {
+    if (!editing) return;
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPosition({ top: rect.bottom + 4, left: rect.left });
+    };
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [editing]);
+
   const handleOpen = () => {
     const rect = triggerRef.current.getBoundingClientRect();
-    setPosition({
-      top: rect.bottom + window.scrollY + 4,
-      left: rect.left + window.scrollX,
-    });
+    setPosition({ top: rect.bottom + 4, left: rect.left });
     setEditing((prev) => !prev);
   };
 
   const handleSave = async (value) => {
-    if (value === category) {
-      setEditing(false);
-      return;
-    }
+    if (value === category) return setEditing(false);
     setLoading(true);
     try {
-      const res = await fetch(`/api/products/${productId}/category`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: value }),
-      });
-      const data = await res.json();
+      const { data } = await axios.patch(
+        `/api/products/${productId}/category`,
+        {
+          category: value,
+        },
+      );
       if (!data.success) throw new Error(data.message);
       setSelected(value);
       onUpdate(value);

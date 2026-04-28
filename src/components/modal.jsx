@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from "react";
+import { useState, useRef, memo, useCallback, useEffect } from "react";
 import {
   X,
   Package,
@@ -6,10 +6,12 @@ import {
   DollarSign,
   ChevronRight,
   ChevronLeft,
+  Store,
   Check,
 } from "lucide-react";
 import { Button } from "./buttons";
 import { UNITS, CATEGORIES, INITIAL_FORM } from "../constants/modal";
+import axios from "axios";
 
 const STEPS = [
   { id: 1, label: "Product", icon: Package },
@@ -73,6 +75,46 @@ const UnitGrid = memo(({ selected, onSelect }) => (
     ))}
   </div>
 ));
+
+const useBarcodeSearch = (barcode, setField) => {
+  const [searching, setSearching] = useState(false);
+  const [found, setFound] = useState(false);
+  const [existingBranches, setExistingBranches] = useState([]);
+
+  useEffect(() => {
+    if (!barcode || barcode.length < 4) {
+      setFound(false);
+      setExistingBranches([]);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const { data } = await axios.get(`/api/products/barcode/${barcode}`);
+        if (data.success && data.product) {
+          setField("name", data.product.name);
+          setField("brand", data.product.brand);
+          setField("category", data.product.category);
+          setField("unit", data.product.unit);
+          setFound(true);
+          setExistingBranches(data.existing_branches ?? []);
+        } else {
+          setFound(false);
+          setExistingBranches([]);
+        }
+      } catch {
+        setFound(false);
+        setExistingBranches([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timeout);
+  }, [barcode]);
+
+  return { searching, found, existingBranches };
+};
 
 // ── Step indicators ────────────────────────────────────────────
 const StepBar = memo(({ step }) => (
@@ -236,40 +278,80 @@ const ModalShell = ({
 );
 
 // ── Step bodies (shared between Add and Edit) ──────────────────
-const Step1 = ({ form, errors, setField }) => (
-  <>
-    <Field label="Barcode / Product Code" required error={errors.barcode}>
-      <Input
-        placeholder="e.g. 4800016644801"
-        value={form.barcode}
-        onChange={(e) => setField("barcode", e.target.value)}
+const Step1 = ({
+  form,
+  errors,
+  setField,
+  selectedBranch,
+  setSelectedBranch,
+}) => {
+  const { searching, found, existingBranches } = useBarcodeSearch(
+    form.barcode,
+    setField,
+  );
+
+  return (
+    <>
+      <BranchSelector
+        selected={selectedBranch}
+        onSelect={setSelectedBranch}
+        error={errors.branch}
+        existingBranches={existingBranches} // ← add this
       />
-    </Field>
-    <Field label="Product Name" required error={errors.name}>
-      <Input
-        placeholder="e.g. Lucky Me Beef Noodles"
-        value={form.name}
-        onChange={(e) => setField("name", e.target.value)}
-      />
-    </Field>
-    <Field label="Brand" required error={errors.brand}>
-      <Input
-        placeholder="e.g. Monde Nissin"
-        value={form.brand}
-        onChange={(e) => setField("brand", e.target.value)}
-      />
-    </Field>
-    <Field label="Category" required error={errors.category}>
-      <CategoryGrid
-        selected={form.category}
-        onSelect={(v) => setField("category", v)}
-      />
-    </Field>
-    <Field label="Unit" required error={errors.unit}>
-      <UnitGrid selected={form.unit} onSelect={(v) => setField("unit", v)} />
-    </Field>
-  </>
-);
+
+      <Field label="Barcode / Product Code" required error={errors.barcode}>
+        <div className="relative">
+          <Input
+            placeholder="e.g. 4800016644801"
+            value={form.barcode}
+            onChange={(e) => setField("barcode", e.target.value)}
+          />
+          {searching && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+          {!searching && found && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-green-600 font-medium">
+              <Check size={13} className="text-green-500" />
+              Auto-filled
+            </div>
+          )}
+        </div>
+        {found && (
+          <p className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+            ✓ Product found.
+          </p>
+        )}
+      </Field>
+
+      {/* rest of fields unchanged */}
+      <Field label="Product Name" required error={errors.name}>
+        <Input
+          placeholder="e.g. Lucky Me Beef Noodles"
+          value={form.name}
+          onChange={(e) => setField("name", e.target.value)}
+        />
+      </Field>
+      <Field label="Brand" required error={errors.brand}>
+        <Input
+          placeholder="e.g. Monde Nissin"
+          value={form.brand}
+          onChange={(e) => setField("brand", e.target.value)}
+        />
+      </Field>
+      <Field label="Category" required error={errors.category}>
+        <CategoryGrid
+          selected={form.category}
+          onSelect={(v) => setField("category", v)}
+        />
+      </Field>
+      <Field label="Unit" required error={errors.unit}>
+        <UnitGrid selected={form.unit} onSelect={(v) => setField("unit", v)} />
+      </Field>
+    </>
+  );
+};
 
 const Step2 = ({ form, errors, setField }) => (
   <>
@@ -395,12 +477,18 @@ const useFormState = (initial) => {
 export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [selectedBranch, setSelectedBranch] = useState(null);
   const { form, setForm, errors, setErrors, setField, handlePricingChange } =
     useFormState(INITIAL_FORM);
 
   if (!open) return null;
 
   const handleNext = () => {
+    if (step === 1 && !selectedBranch) {
+      setErrors({ branch: "Please select a branch." });
+      return;
+    }
+
     const errs = validateStep(step, form);
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
@@ -418,25 +506,22 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/products/create-product", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          stock_management: {
-            ...form.stock_management,
-            current_stock: Number(form.stock_management.current_stock),
-            reorder_level: Number(form.stock_management.reorder_level),
-          },
-          pricing: {
-            cost_per_unit: Number(form.pricing.cost_per_unit),
-            markup_value: Number(form.pricing.markup_value),
-            selling_price: Number(form.pricing.selling_price),
-          },
-        }),
+      const { data } = await axios.post("/api/products/create-product", {
+        ...form,
+        branch: selectedBranch._id,
+        stock_management: {
+          ...form.stock_management,
+          current_stock: Number(form.stock_management.current_stock),
+          reorder_level: Number(form.stock_management.reorder_level),
+        },
+        pricing: {
+          cost_per_unit: Number(form.pricing.cost_per_unit),
+          markup_value: Number(form.pricing.markup_value),
+          selling_price: Number(form.pricing.selling_price),
+        },
       });
-      const data = await res.json();
-      if (!res.ok || !data.success)
+
+      if (!data.success)
         throw new Error(data.message || "Failed to add product");
       setForm(INITIAL_FORM);
       setErrors({});
@@ -454,6 +539,7 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
     setForm(INITIAL_FORM);
     setErrors({});
     setStep(1);
+    setSelectedBranch(null);
     onClose();
   };
 
@@ -472,7 +558,15 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
       loading={loading}
       errors={errors}
     >
-      {step === 1 && <Step1 form={form} errors={errors} setField={setField} />}
+      {step === 1 && (
+        <Step1
+          form={form}
+          errors={errors}
+          setField={setField}
+          selectedBranch={selectedBranch}
+          setSelectedBranch={setSelectedBranch}
+        />
+      )}
       {step === 2 && <Step2 form={form} errors={errors} setField={setField} />}
       {step === 3 && (
         <Step3
@@ -597,3 +691,131 @@ export const Edit_Product_Modal = ({ open, onClose, onSuccess, products }) => {
     </ModalShell>
   );
 };
+
+const BranchSelector = memo(
+  ({ selected, onSelect, error, existingBranches = [] }) => {
+    const [branches, setBranches] = useState([]);
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+      axios
+        .get("/api/branches")
+        .then(({ data }) => {
+          if (data.success) setBranches(data.branches);
+        })
+        .catch(console.error);
+    }, []);
+
+    useEffect(() => {
+      const handleClickOutside = (e) => {
+        if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // If selected branch is now in existingBranches, clear it
+    useEffect(() => {
+      if (selected && existingBranches.includes(selected._id)) {
+        onSelect(null);
+      }
+    }, [existingBranches]);
+
+    const availableBranches = branches.filter(
+      (b) => !existingBranches.includes(b._id),
+    );
+
+    return (
+      <Field label="Branch" required error={error}>
+        <div className="relative" ref={ref}>
+          <button
+            type="button"
+            onClick={() => setOpen((p) => !p)}
+            className={`w-full flex items-center justify-between px-3 py-2.5 text-sm border rounded-lg transition-all outline-none ${
+              selected
+                ? "border-indigo-400 bg-indigo-50 text-indigo-600"
+                : "border-gray-200 text-gray-400 hover:border-gray-300"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Store size={14} />
+              <span>{selected ? selected.name : "Select a branch"}</span>
+            </div>
+            <ChevronRight
+              size={14}
+              className={`transition-transform ${open ? "rotate-90" : ""}`}
+            />
+          </button>
+
+          {open && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+              <div className="max-h-40 overflow-y-auto py-1">
+                {availableBranches.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic text-center py-4">
+                    {existingBranches.length > 0
+                      ? "This product exists in all branches"
+                      : "No branches found"}
+                  </p>
+                ) : (
+                  <>
+                    {availableBranches.map((branch) => (
+                      <button
+                        key={branch._id}
+                        type="button"
+                        onClick={() => {
+                          onSelect(branch);
+                          setOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${
+                          selected?._id === branch._id
+                            ? "text-indigo-600 font-medium bg-indigo-50"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        <div className="flex flex-col items-start">
+                          <span>{branch.name}</span>
+                          {branch.address && (
+                            <span className="text-xs text-gray-400">
+                              {branch.address}
+                            </span>
+                          )}
+                        </div>
+                        {selected?._id === branch._id && (
+                          <Check size={13} className="text-indigo-500" />
+                        )}
+                      </button>
+                    ))}
+
+                    {/* Show disabled existing branches */}
+                    {branches
+                      .filter((b) => existingBranches.includes(b._id))
+                      .map((branch) => (
+                        <div
+                          key={branch._id}
+                          className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-300 cursor-not-allowed"
+                        >
+                          <div className="flex flex-col items-start">
+                            <span>{branch.name}</span>
+                            {branch.address && (
+                              <span className="text-xs text-gray-200">
+                                {branch.address}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-md">
+                            Already added
+                          </span>
+                        </div>
+                      ))}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </Field>
+    );
+  },
+);

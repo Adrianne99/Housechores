@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Check, Pencil, X } from "lucide-react";
+import axios from "axios";
 
 export const EditableSupplier = ({ productId, supplier, onUpdate }) => {
   const [editing, setEditing] = useState(false);
@@ -25,23 +26,16 @@ export const EditableSupplier = ({ productId, supplier, onUpdate }) => {
   };
 
   const handleSave = async () => {
-    if (value === supplier) {
-      setEditing(false);
-      return;
-    }
-    if (!value.trim()) {
-      setError("Required");
-      return;
-    }
-
+    if (value === supplier) return setEditing(false);
+    if (!value.trim()) return setError("Required");
     setLoading(true);
     try {
-      const res = await fetch(`/api/products/${productId}/supplier`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ supplier: value }),
-      });
-      const data = await res.json();
+      const { data } = await axios.patch(
+        `/api/products/${productId}/supplier`,
+        {
+          supplier: value,
+        },
+      );
       if (!data.success) throw new Error(data.message);
       onUpdate(value);
       setEditing(false);
@@ -51,11 +45,6 @@ export const EditableSupplier = ({ productId, supplier, onUpdate }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleSave();
-    if (e.key === "Escape") handleCancel();
   };
 
   if (editing) {
@@ -69,7 +58,10 @@ export const EditableSupplier = ({ productId, supplier, onUpdate }) => {
               setValue(e.target.value);
               setError(null);
             }}
-            onKeyDown={handleKeyDown}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSave();
+              if (e.key === "Escape") handleCancel();
+            }}
             placeholder="e.g. NutriAsia"
             className="text-sm w-36 px-2 py-1 border border-indigo-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 bg-white placeholder:text-gray-300"
           />

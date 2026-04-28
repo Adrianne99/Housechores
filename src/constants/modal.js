@@ -16,15 +16,26 @@ export const INITIAL_FORM = {
   },
 };
 
+// Full columns — shown when specific branch selected
 export const COLUMNS = [
   { key: "photo", label: "Photo" },
   { key: "name", label: "Product Name" },
   { key: "barcode", label: "Barcode" },
   { key: "category", label: "Category" },
   { key: "stock_level", label: "Stock Level" },
-  { key: "unit", label: "Quantity" },
+  { key: "quantity", label: "Quantity" },
   { key: "supplier", label: "Supplier" },
   { key: "selling_price", label: "Selling Price" },
+  { key: "actions", label: "Actions" },
+];
+
+// Minimal columns — shown when All Branches selected
+export const COLUMNS_ALL_BRANCHES = [
+  { key: "photo", label: "Photo" },
+  { key: "name", label: "Product Name" },
+  { key: "barcode", label: "Barcode" },
+  { key: "category", label: "Category" },
+  { key: "stock_level", label: "Stock Level" },
   { key: "actions", label: "Actions" },
 ];
 
