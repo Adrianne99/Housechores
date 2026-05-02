@@ -52,7 +52,7 @@ export const EditablePrice = ({ productId, pricing, onUpdate }) => {
     }
     setLoading(true);
     try {
-      const { data } = await axios.patch(`/api/products/${productId}/pricing`, {
+      const { data } = await axios.patch(`/api/products/${productId}/price`, {
         cost_per_unit: Number(form.cost_per_unit),
         markup_value: Number(form.markup_value),
         selling_price: Number(form.selling_price),

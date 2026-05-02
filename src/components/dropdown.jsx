@@ -1,9 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { Store, Plus, Trash2, X, Check } from "lucide-react";
 import { Button } from "./buttons";
+import { AppContext } from "../context/app_context"; // ← import your context
 import axios from "axios";
 
 export const BranchDropdown = ({ onBranchSelect }) => {
+  const { userData } = useContext(AppContext); // ← get role
+  const can_edit_all = ["admin"].includes(userData?.role);
+
   const [open, setOpen] = useState(false);
   const [branches, setBranches] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -52,7 +56,7 @@ export const BranchDropdown = ({ onBranchSelect }) => {
       setAdding(false);
       setError(null);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -69,7 +73,7 @@ export const BranchDropdown = ({ onBranchSelect }) => {
         onBranchSelect?.(null);
       }
     } catch (err) {
-      console.error(err);
+      console.error(err.response?.data?.message || err.message);
     }
   };
 
@@ -111,24 +115,26 @@ export const BranchDropdown = ({ onBranchSelect }) => {
 
       {open && (
         <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Branches
             </p>
-            <button
-              onClick={() => {
-                setAdding((p) => !p);
-                setError(null);
-              }}
-              className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-indigo-600 transition-colors"
-            >
-              <Plus size={14} />
-            </button>
+            {/* Add button — owner/admin only */}
+            {can_edit_all && (
+              <button
+                onClick={() => {
+                  setAdding((p) => !p);
+                  setError(null);
+                }}
+                className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-indigo-600 transition-colors"
+              >
+                <Plus size={14} />
+              </button>
+            )}
           </div>
 
-          {/* Add form */}
-          {adding && (
+          {/* Add form — owner/admin only */}
+          {adding && can_edit_all && (
             <div className="px-3 py-2.5 border-b border-gray-100 flex flex-col gap-2">
               <input
                 autoFocus
@@ -173,9 +179,7 @@ export const BranchDropdown = ({ onBranchSelect }) => {
             </div>
           )}
 
-          {/* Branch list */}
           <div className="max-h-52 overflow-y-auto py-1">
-            {/* All Branches option */}
             <button
               onClick={() => {
                 setSelected(null);
@@ -222,12 +226,15 @@ export const BranchDropdown = ({ onBranchSelect }) => {
                     {selected?._id === branch._id && (
                       <Check size={13} className="text-indigo-500" />
                     )}
-                    <span
-                      onClick={(e) => handleDelete(branch._id, e)}
-                      className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <Trash2 size={12} />
-                    </span>
+                    {/* Delete — owner/admin only */}
+                    {can_edit_all && (
+                      <span
+                        onClick={(e) => handleDelete(branch._id, e)}
+                        className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Trash2 size={12} />
+                      </span>
+                    )}
                   </div>
                 </button>
               ))

@@ -7,6 +7,15 @@ import { TextInput } from "./input";
 const Header = ({ title }) => {
   const { userData } = useContext(AppContext);
 
+  const formatRole = (role) => {
+    const map = {
+      admin: "Admin",
+      branch_manager: "Branch Manager",
+      employee: "Employee",
+    };
+    return map[role] ?? "Loading...";
+  };
+
   return (
     <div className="w-full flex justify-between items-center gap-6">
       <H3 className="whitespace-nowrap leading-tight">{title}</H3>
@@ -32,7 +41,7 @@ const Header = ({ title }) => {
               variant="muted"
               className="text-start text-primary font-medium"
             >
-              {userData?.role ?? `Loading...`}
+              {formatRole(userData?.role) ?? `Loading...`}
             </Paragraph>
           </div>
         </div>

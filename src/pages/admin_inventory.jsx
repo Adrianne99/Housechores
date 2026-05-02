@@ -2,17 +2,19 @@ import Header from "../components/header";
 import { DashboardCard, StocksCard } from "../components/card";
 import { Button } from "../components/buttons";
 import { BranchDropdown } from "../components/dropdown";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react"; // ← add useContext
 import { Funnel, Plus, Download, X, Trash2 } from "lucide-react";
 import { H4 } from "../components/texts";
-import { Add_Product_Modal } from "../components/modal";
-import { COLUMNS, COLUMNS_ALL_BRANCHES } from "../constants/modal";
+import { Add_Product_Modal, Edit_Product_Modal } from "../components/modal";
 import { FILTER_OPTIONS } from "../constants/inventory";
 import { useExportCSV } from "../hooks/use_export";
 import { useThrottle } from "../hooks/use_throttle";
+import { AppContext } from "../context/app_context"; // ← import your existing context
 import axios from "axios";
 
 export const AdminInventory = () => {
+  const { userData } = useContext(AppContext); // ← grab userData
+
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const dropdownRef = useRef(null);
@@ -22,6 +24,19 @@ export const AdminInventory = () => {
   const [products, setProducts] = useState([]);
   const [deleteAll, setDeleteAll] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState(null);
+  const [editModal, setEditModal] = useState(false);
+  const [editProduct, setEditProduct] = useState(null);
+
+  // ── Role flags from userData.role ────────────────────────────
+  const can_edit_all = ["owner", "admin"].includes(userData?.role);
+  const can_edit_branch = ["owner", "admin", "branch_manager"].includes(
+    userData?.role,
+  );
+
+  const handleEditProduct = (product) => {
+    setEditProduct(product);
+    setEditModal(true);
+  };
 
   const total_stocks = useMemo(
     () =>
@@ -73,7 +88,7 @@ export const AdminInventory = () => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []); // ← fixed: removed refresh
+  }, []);
 
   const handleDeleteAll = async () => {
     try {
@@ -104,20 +119,23 @@ export const AdminInventory = () => {
         <div className="col-span-4 pt-10 pb-2 flex justify-between items-center gap-2">
           <div className="flex justify-start items-center gap-4">
             <H4>Current Stocks</H4>
-            <Button
-              variant="danger"
-              size="md"
-              className="w-fit"
-              disabled={checkedRows.length === 0}
-              onClick={() => setDeleteAll(true)}
-            >
-              <Trash2 size={16} />
-              <span>
-                {checkedRows.length > 0
-                  ? `Delete (${checkedRows.length})`
-                  : "Delete Selected"}
-              </span>
-            </Button>
+
+            {can_edit_all && (
+              <Button
+                variant="danger"
+                size="md"
+                className="w-fit"
+                disabled={checkedRows.length === 0}
+                onClick={() => setDeleteAll(true)}
+              >
+                <Trash2 size={16} />
+                <span>
+                  {checkedRows.length > 0
+                    ? `Delete (${checkedRows.length})`
+                    : "Delete Selected"}
+                </span>
+              </Button>
+            )}
 
             {deleteAll && (
               <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -175,9 +193,12 @@ export const AdminInventory = () => {
               <span>Export</span>
             </Button>
 
-            <BranchDropdown
-              onBranchSelect={(branch) => setSelectedBranch(branch)}
-            />
+            {/* Branch dropdown — owner/admin only */}
+            {can_edit_all && (
+              <BranchDropdown
+                onBranchSelect={(branch) => setSelectedBranch(branch)}
+              />
+            )}
 
             <div className="relative" ref={dropdownRef}>
               <Button
@@ -230,29 +251,48 @@ export const AdminInventory = () => {
               )}
             </div>
 
-            <Button
-              variant="primary"
-              size="md"
-              className="w-fit gap-2"
-              onClick={() => setModal(true)}
-            >
-              <Plus size={16} />
-              <span>Add Product</span>
-            </Button>
+            {/* Add Product — owner/admin only */}
+            {can_edit_all && (
+              <Button
+                variant="primary"
+                size="md"
+                className="w-fit gap-2"
+                onClick={() => setModal(true)}
+              >
+                <Plus size={16} />
+                <span>Add Product</span>
+              </Button>
+            )}
           </div>
         </div>
 
-        <Add_Product_Modal
-          open={modal}
-          onClose={() => setModal(false)}
-          onSuccess={() => setRefresh((prev) => prev + 1)}
-        />
+        {can_edit_all && (
+          <Add_Product_Modal
+            open={modal}
+            onClose={() => setModal(false)}
+            onSuccess={() => setRefresh((prev) => prev + 1)}
+          />
+        )}
+
+        {can_edit_all && (
+          <Edit_Product_Modal
+            open={editModal}
+            products={editProduct}
+            onClose={() => {
+              setEditModal(false);
+              setEditProduct(null);
+            }}
+            onSuccess={() => setRefresh((prev) => prev + 1)}
+          />
+        )}
 
         <div className="col-span-4">
           <StocksCard
             filter={selected?.value}
             refresh={refresh}
-            branch_id={selectedBranch?._id ?? null}
+            branch_id={can_edit_all ? (selectedBranch?._id ?? null) : null}
+            user_role={userData?.role}
+            onEditProduct={handleEditProduct}
             onProductsChange={(data) => setProducts(data)}
             onProductsLoaded={(data) => setProducts(data)}
             onCheckedChange={(rows) => setCheckedRows(rows)}

@@ -37,7 +37,7 @@ export const Input = (props) => (
   />
 );
 
-// ── Memoized grids (prevents re-render on every keystroke) ─────
+// ── Memoized grids ─────────────────────────────────────────────
 const CategoryGrid = memo(({ selected, onSelect }) => (
   <div className="grid grid-cols-3 gap-2">
     {CATEGORIES.map((category) => (
@@ -76,6 +76,7 @@ const UnitGrid = memo(({ selected, onSelect }) => (
   </div>
 ));
 
+// ── Barcode search hook ────────────────────────────────────────
 const useBarcodeSearch = (barcode, setField) => {
   const [searching, setSearching] = useState(false);
   const [found, setFound] = useState(false);
@@ -116,7 +117,7 @@ const useBarcodeSearch = (barcode, setField) => {
   return { searching, found, existingBranches };
 };
 
-// ── Step indicators ────────────────────────────────────────────
+// ── Step bar ───────────────────────────────────────────────────
 const StepBar = memo(({ step }) => (
   <div className="flex items-center gap-2">
     {STEPS.map((s, i) => {
@@ -191,7 +192,7 @@ const validateStep = (step, form) => {
   return errors;
 };
 
-// ── Shared modal shell ─────────────────────────────────────────
+// ── Modal shell ────────────────────────────────────────────────
 const ModalShell = ({
   title,
   subtitle,
@@ -210,7 +211,6 @@ const ModalShell = ({
       onClick={onClose}
     />
     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-      {/* Header */}
       <div className="px-6 pt-6 pb-4">
         <div className="flex items-center justify-between mb-5">
           <div>
@@ -229,7 +229,6 @@ const ModalShell = ({
 
       <div className="h-px bg-gray-100" />
 
-      {/* Body */}
       <div className="px-6 py-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
         {children}
         {errors?.submit && (
@@ -241,7 +240,6 @@ const ModalShell = ({
 
       <div className="h-px bg-gray-100" />
 
-      {/* Footer */}
       <div className="px-6 py-4 flex gap-2">
         {step > 1 ? (
           <Button
@@ -277,13 +275,14 @@ const ModalShell = ({
   </div>
 );
 
-// ── Step bodies (shared between Add and Edit) ──────────────────
+// ── Step 1 ─────────────────────────────────────────────────────
 const Step1 = ({
   form,
   errors,
   setField,
   selectedBranch,
   setSelectedBranch,
+  hideBranch = false, // ← Edit modal hides branch selector
 }) => {
   const { searching, found, existingBranches } = useBarcodeSearch(
     form.barcode,
@@ -292,12 +291,14 @@ const Step1 = ({
 
   return (
     <>
-      <BranchSelector
-        selected={selectedBranch}
-        onSelect={setSelectedBranch}
-        error={errors.branch}
-        existingBranches={existingBranches} // ← add this
-      />
+      {!hideBranch && (
+        <BranchSelector
+          selected={selectedBranch}
+          onSelect={setSelectedBranch}
+          error={errors.branch}
+          existingBranches={existingBranches}
+        />
+      )}
 
       <Field label="Barcode / Product Code" required error={errors.barcode}>
         <div className="relative">
@@ -325,7 +326,6 @@ const Step1 = ({
         )}
       </Field>
 
-      {/* rest of fields unchanged */}
       <Field label="Product Name" required error={errors.name}>
         <Input
           placeholder="e.g. Lucky Me Beef Noodles"
@@ -353,6 +353,7 @@ const Step1 = ({
   );
 };
 
+// ── Step 2 ─────────────────────────────────────────────────────
 const Step2 = ({ form, errors, setField }) => (
   <>
     <Field label="Current Stock" required error={errors.current_stock}>
@@ -388,7 +389,8 @@ const Step2 = ({ form, errors, setField }) => (
   </>
 );
 
-const Step3 = ({ form, errors, handlePricingChange, setField }) => (
+// ── Step 3 ─────────────────────────────────────────────────────
+const Step3 = ({ form, errors, handlePricingChange }) => (
   <>
     <Field label="Cost per Unit" required error={errors.cost_per_unit}>
       <div className="relative">
@@ -419,11 +421,17 @@ const Step3 = ({ form, errors, handlePricingChange, setField }) => (
       </div>
     </Field>
     <div
-      className={`rounded-xl p-4 border transition-all ${form.pricing.selling_price ? "bg-indigo-50 border-indigo-200" : "bg-gray-50 border-gray-200"}`}
+      className={`rounded-xl p-4 border transition-all ${
+        form.pricing.selling_price
+          ? "bg-indigo-50 border-indigo-200"
+          : "bg-gray-50 border-gray-200"
+      }`}
     >
       <p className="text-xs text-gray-500 mb-1">Computed Selling Price</p>
       <p
-        className={`text-2xl font-bold ${form.pricing.selling_price ? "text-indigo-600" : "text-gray-300"}`}
+        className={`text-2xl font-bold ${
+          form.pricing.selling_price ? "text-indigo-600" : "text-gray-300"
+        }`}
       >
         ₱ {form.pricing.selling_price || "0.00"}
       </p>
@@ -436,7 +444,7 @@ const Step3 = ({ form, errors, handlePricingChange, setField }) => (
   </>
 );
 
-// ── useFormState hook ──────────────────────────────────────────
+// ── useFormState ───────────────────────────────────────────────
 const useFormState = (initial) => {
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
@@ -488,7 +496,6 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
       setErrors({ branch: "Please select a branch." });
       return;
     }
-
     const errs = validateStep(step, form);
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
@@ -520,16 +527,16 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
           selling_price: Number(form.pricing.selling_price),
         },
       });
-
       if (!data.success)
         throw new Error(data.message || "Failed to add product");
       setForm(INITIAL_FORM);
       setErrors({});
       setStep(1);
+      setSelectedBranch(null);
       onSuccess?.();
       onClose();
     } catch (err) {
-      setErrors({ submit: err.message });
+      setErrors({ submit: err.response?.data?.message || err.message });
     } finally {
       setLoading(false);
     }
@@ -573,7 +580,6 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
           form={form}
           errors={errors}
           handlePricingChange={handlePricingChange}
-          setField={setField}
         />
       )}
     </ModalShell>
@@ -585,26 +591,35 @@ export const Edit_Product_Modal = ({ open, onClose, onSuccess, products }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const toForm = (product) => ({
-    barcode: product.barcode,
-    name: product.name,
-    brand: product.brand,
-    category: product.category,
-    unit: product.unit,
+  const toForm = (p) => ({
+    barcode: p.barcode,
+    name: p.name,
+    brand: p.brand,
+    category: p.category,
+    unit: p.unit,
     stock_management: {
-      current_stock: product.stock_management.current_stock,
-      reorder_level: product.stock_management.reorder_level,
-      supplier: product.stock_management.supplier ?? "",
+      current_stock: p.stock_management.current_stock,
+      reorder_level: p.stock_management.reorder_level,
+      supplier: p.stock_management.supplier ?? "",
     },
     pricing: {
-      cost_per_unit: product.pricing.cost_per_unit,
-      markup_value: product.pricing.markup_value,
-      selling_price: product.pricing.selling_price,
+      cost_per_unit: p.pricing.cost_per_unit,
+      markup_value: p.pricing.markup_value,
+      selling_price: p.pricing.selling_price,
     },
   });
 
   const { form, setForm, errors, setErrors, setField, handlePricingChange } =
     useFormState(products ? toForm(products) : INITIAL_FORM);
+
+  // ── Sync form whenever a different product is passed in ──────
+  useEffect(() => {
+    if (products) {
+      setForm(toForm(products));
+      setErrors({});
+      setStep(1);
+    }
+  }, [products?._id]); // only re-sync when the product ID changes
 
   if (!open || !products) return null;
 
@@ -626,32 +641,29 @@ export const Edit_Product_Modal = ({ open, onClose, onSuccess, products }) => {
     }
     setLoading(true);
     try {
-      const res = await fetch(`/api/products/${product._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          stock_management: {
-            ...form.stock_management,
-            current_stock: Number(form.stock_management.current_stock),
-            reorder_level: Number(form.stock_management.reorder_level),
-          },
-          pricing: {
-            cost_per_unit: Number(form.pricing.cost_per_unit),
-            markup_value: Number(form.pricing.markup_value),
-            selling_price: Number(form.pricing.selling_price),
-          },
-        }),
+      // ── Fix: was `product._id`, corrected to `products._id` ──
+      const { data } = await axios.put(`/api/products/${products._id}`, {
+        ...form,
+        stock_management: {
+          ...form.stock_management,
+          current_stock: Number(form.stock_management.current_stock),
+          reorder_level: Number(form.stock_management.reorder_level),
+        },
+        pricing: {
+          cost_per_unit: Number(form.pricing.cost_per_unit),
+          markup_value: Number(form.pricing.markup_value),
+          selling_price: Number(form.pricing.selling_price),
+        },
       });
-      const data = await res.json();
-      if (!res.ok || !data.success)
+      if (!data.success)
         throw new Error(data.message || "Failed to update product");
       setErrors({});
       setStep(1);
       onSuccess?.();
       onClose();
     } catch (err) {
-      setErrors({ submit: err.message });
+      // ── Picks up backend error message from inject_branch_filter or controllers
+      setErrors({ submit: err.response?.data?.message || err.message });
     } finally {
       setLoading(false);
     }
@@ -678,20 +690,29 @@ export const Edit_Product_Modal = ({ open, onClose, onSuccess, products }) => {
       loading={loading}
       errors={errors}
     >
-      {step === 1 && <Step1 form={form} errors={errors} setField={setField} />}
+      {step === 1 && (
+        // ── hideBranch=true: branch is already set, no need to change it on edit
+        <Step1
+          form={form}
+          errors={errors}
+          setField={setField}
+          hideBoard={true}
+          hideBranch={true}
+        />
+      )}
       {step === 2 && <Step2 form={form} errors={errors} setField={setField} />}
       {step === 3 && (
         <Step3
           form={form}
           errors={errors}
           handlePricingChange={handlePricingChange}
-          setField={setField}
         />
       )}
     </ModalShell>
   );
 };
 
+// ── Branch Selector ────────────────────────────────────────────
 const BranchSelector = memo(
   ({ selected, onSelect, error, existingBranches = [] }) => {
     const [branches, setBranches] = useState([]);
@@ -716,7 +737,6 @@ const BranchSelector = memo(
         document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // If selected branch is now in existingBranches, clear it
     useEffect(() => {
       if (selected && existingBranches.includes(selected._id)) {
         onSelect(null);
@@ -787,8 +807,6 @@ const BranchSelector = memo(
                         )}
                       </button>
                     ))}
-
-                    {/* Show disabled existing branches */}
                     {branches
                       .filter((b) => existingBranches.includes(b._id))
                       .map((branch) => (

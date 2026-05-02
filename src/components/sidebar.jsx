@@ -26,21 +26,21 @@ const MENU_CONFIG = [
     link: "",
     icon: LayoutDashboard,
     section: "main",
-    roles: ["admin", "employee"],
+    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
   },
   {
     item: "POS Terminal",
     link: "/pos",
     icon: ShoppingCart,
     section: "main",
-    roles: ["admin", "employee"],
+    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
   },
   {
     item: "Inventory",
     link: "/inventory",
     icon: Box,
     section: "main",
-    roles: ["admin", "employee"],
+    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
   },
   {
     item: "Operation Expenses",
@@ -75,21 +75,21 @@ const MENU_CONFIG = [
     link: "/history",
     icon: History,
     section: "main",
-    roles: ["admin", "employee"],
+    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
   },
   {
     item: "Staff Management",
     link: "/staff-management",
     icon: Users,
     section: "main",
-    roles: ["admin"],
+    roles: ["admin"], // ← admin only, stays the same
   },
   {
     item: "Profile",
     link: "/profile",
     icon: User,
     section: "workspace",
-    roles: ["admin", "employee"],
+    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
   },
   {
     item: "Settings",

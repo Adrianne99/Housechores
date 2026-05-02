@@ -17,7 +17,6 @@ import { EditableCategory } from "./editable_category";
 import { EditablePrice } from "./editable_price";
 import axios from "axios";
 
-// ── Dashboard Card ──────────────────────────────────────────────
 export const DashboardCard = ({ title, card_icon, sign, value }) => (
   <div className="bg-white w-full h-[180px] p-6 rounded-xl shadow-sm flex flex-col justify-between">
     <div className="flex justify-between items-start">
@@ -47,6 +46,19 @@ export const DashboardCard = ({ title, card_icon, sign, value }) => (
   </div>
 );
 
+// ── Chart Card ──────────────────────────────────────────────────
+export const ChartCard = ({}) => {
+  return (
+    <div className="bg-white w-full h-[420px] p-6 rounded-xl shadow-sm flex flex-col justify-between">
+      <div className="flex justify-between items-start">
+        <H6 className="text-gray-500 font-medium uppercase tracking-wider">
+          Sales Analytics
+        </H6>
+      </div>
+    </div>
+  );
+};
+
 // ── Group products by product_id ────────────────────────────────
 const groupProducts = (products) => {
   const map = new Map();
@@ -61,7 +73,6 @@ const groupProducts = (products) => {
   return Array.from(map.values());
 };
 
-// ── Branch pill ─────────────────────────────────────────────────
 const BranchTag = ({ name }) => (
   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100">
     <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
@@ -77,6 +88,7 @@ export const StocksCard = ({
   onCheckedChange,
   onProductsChange,
   branch_id,
+  user_role, // ← pass this from your auth context
 }) => {
   const [products, setProducts] = useState([]);
   const [quantities, setQuantities] = useState({});
@@ -84,8 +96,16 @@ export const StocksCard = ({
   const [selected, setSelected] = useState([]);
   const [expanded, setExpanded] = useState({});
 
-  const isAllBranches = !branch_id;
+  // ── Role permission flags ──
+  const can_edit_all = ["owner", "admin"].includes(user_role);
+  const can_edit_branch = ["owner", "admin", "branch_manager"].includes(
+    user_role,
+  );
+  const isAllBranches = !branch_id && can_edit_all;
 
+  const is_employee = user_role === "employee";
+
+  // ── Dynamic headers based on view + role ──
   const allBranchesHeaders = [
     "Photo",
     "Product Name",
@@ -102,18 +122,20 @@ export const StocksCard = ({
     "Category",
     "Stock Level",
     "Quantity",
-    "Supplier",
-    "Selling Price",
+    // Only show Supplier & Price columns if branch_manager or above
+    ...(can_edit_branch ? ["Supplier", "Selling Price"] : []),
     "Actions",
   ];
   const headers = isAllBranches ? allBranchesHeaders : branchHeaders;
 
+  // ── Fetch — backend scopes by branch automatically via middleware ──
   const fetch_products = async () => {
     setLoading(true);
     try {
       const url = branch_id
         ? `/api/products?branch_id=${branch_id}`
         : "/api/products";
+
       const { data } = await axios.get(url);
       setProducts(data.products);
       onProductsLoaded?.(data.products);
@@ -123,7 +145,7 @@ export const StocksCard = ({
       });
       setQuantities(initial);
     } catch (error) {
-      console.log("error:", error);
+      console.error("fetch_products error:", error);
     } finally {
       setLoading(false);
     }
@@ -203,26 +225,45 @@ export const StocksCard = ({
         </div>
       </td>
       <td className="px-4 py-3">
-        <EditableName
-          productId={product._id}
-          name={product.name}
-          brand={product.brand}
-          onUpdate={(form) => updateProduct(product._id, form)}
-        />
+        {/* Owner/admin can edit name, employee sees plain text */}
+        {can_edit_all ? (
+          <EditableName
+            productId={product._id}
+            name={product.name}
+            brand={product.brand}
+            onUpdate={(form) => updateProduct(product._id, form)}
+          />
+        ) : (
+          <span className="text-sm font-medium text-gray-700">
+            {product.name}
+          </span>
+        )}
       </td>
       <td className="px-4 py-3">
-        <EditableBarcode
-          productId={product._id}
-          barcode={product.barcode}
-          onUpdate={(v) => updateProduct(product._id, { barcode: v })}
-        />
+        {can_edit_branch ? (
+          <EditableBarcode
+            productId={product._id}
+            barcode={product.barcode}
+            onUpdate={(v) => updateProduct(product._id, { barcode: v })}
+          />
+        ) : (
+          <span className="text-sm text-gray-600">
+            {product.barcode ?? "—"}
+          </span>
+        )}
       </td>
       <td className="px-4 py-3">
-        <EditableCategory
-          productId={product._id}
-          category={product.category}
-          onUpdate={(v) => updateProduct(product._id, { category: v })}
-        />
+        {can_edit_all ? (
+          <EditableCategory
+            productId={product._id}
+            category={product.category}
+            onUpdate={(v) => updateProduct(product._id, { category: v })}
+          />
+        ) : (
+          <span className="text-sm text-gray-600">
+            {product.category ?? "—"}
+          </span>
+        )}
       </td>
       <td className="px-4 py-3">
         <StockBadge
@@ -242,41 +283,58 @@ export const StocksCard = ({
               [product._id]: Number(updated.current_stock),
             }));
             updateProduct(product._id, {
-              stock_management: { ...product.stock_management, ...updated },
+              stock_management: {
+                ...product.stock_management,
+                ...updated,
+                current_stock: Number(updated.current_stock),
+              },
             });
           }}
         />
       </td>
-      <td className="px-4 py-3 whitespace-nowrap">
-        <EditableSupplier
-          productId={product._id}
-          supplier={product.stock_management.supplier}
-          onUpdate={(v) =>
-            updateProduct(product._id, {
-              stock_management: { ...product.stock_management, supplier: v },
-            })
-          }
-        />
-      </td>
-      <td className="px-4 py-3 whitespace-nowrap">
-        <EditablePrice
-          productId={product._id}
-          pricing={product.pricing}
-          onUpdate={(updated) =>
-            updateProduct(product._id, {
-              pricing: { ...product.pricing, ...updated },
-            })
-          }
-        />
-      </td>
+
+      {/* Supplier & Price — branch_manager and above only */}
+      {can_edit_branch && (
+        <>
+          <td className="px-4 py-3 whitespace-nowrap">
+            <EditableSupplier
+              productId={product._id}
+              supplier={product.stock_management.supplier}
+              onUpdate={(v) =>
+                updateProduct(product._id, {
+                  stock_management: {
+                    ...product.stock_management,
+                    supplier: v,
+                  },
+                })
+              }
+            />
+          </td>
+          <td className="px-4 py-3 whitespace-nowrap">
+            <EditablePrice
+              productId={product._id}
+              pricing={product.pricing}
+              onUpdate={(updated) =>
+                updateProduct(product._id, {
+                  pricing: { ...product.pricing, ...updated },
+                })
+              }
+            />
+          </td>
+        </>
+      )}
+
       <td className="px-4 py-3">
         <div className="flex items-center gap-1">
-          <button
-            className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-            onClick={() => handleDelete(product._id)}
-          >
-            <Trash2 size={15} />
-          </button>
+          {/* Delete — owner/admin only */}
+          {can_edit_all && (
+            <button
+              className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+              onClick={() => handleDelete(product._id)}
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
           <button className="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors">
             <ArrowLeftRight size={15} />
           </button>
@@ -288,22 +346,27 @@ export const StocksCard = ({
   // ── Grouped row — all branches ──
   const renderGroupedRow = (group) => {
     const key = group.product_id ?? group._id;
+    const isExpanded = expanded[key];
 
-    // ← Sum stock across all branches
     const totalStock = group.branches.reduce(
-      (sum, b) => sum + (quantities[b._id] ?? b.stock_management.current_stock),
+      (sum, branch) =>
+        sum + (quantities[branch._id] ?? branch.stock_management.current_stock),
       0,
     );
     const lowestReorder = Math.max(
-      ...group.branches.map((b) => b.stock_management.reorder_level),
+      ...group.branches.map((branch) => branch.stock_management.reorder_level),
     );
 
     return (
       <React.Fragment key={key}>
+        {/* ── Parent row ── */}
         <tr
-          className={`transition-colors ${selected.includes(group._id) ? "bg-blue-50/40" : "hover:bg-gray-50"}`}
+          className={`transition-colors cursor-pointer ${
+            selected.includes(group._id) ? "bg-blue-50/40" : "hover:bg-gray-50"
+          }`}
+          onClick={() => toggleExpand(key)}
         >
-          <td className="px-4 py-3">
+          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
             <input
               type="checkbox"
               checked={selected.includes(group._id)}
@@ -325,34 +388,39 @@ export const StocksCard = ({
             </div>
           </td>
           <td className="px-4 py-3">
-            <EditableName
-              productId={group._id}
-              name={group.name}
-              brand={group.brand}
-              onUpdate={(form) => updateProduct(group._id, form)}
-            />
+            <div className="flex items-center gap-1">
+              {isExpanded ? (
+                <ChevronDown size={14} className="text-gray-400" />
+              ) : (
+                <ChevronRight size={14} className="text-gray-400" />
+              )}
+              {can_edit_all ? (
+                <EditableName
+                  productId={group._id}
+                  name={group.name}
+                  brand={group.brand}
+                  onUpdate={(form) => updateProduct(group._id, form)}
+                />
+              ) : (
+                <span className="text-sm font-medium text-gray-700">
+                  {group.name}
+                </span>
+              )}
+            </div>
           </td>
           <td className="px-4 py-3">
-            <EditableBarcode
-              productId={group._id}
-              barcode={group.barcode}
-              onUpdate={(v) => updateProduct(group._id, { barcode: v })}
-            />
+            <span className="text-sm text-gray-600">
+              {group.barcode ?? "—"}
+            </span>
           </td>
           <td className="px-4 py-3">
-            <EditableCategory
-              productId={group._id}
-              category={group.category}
-              onUpdate={(v) => updateProduct(group._id, { category: v })}
-            />
+            <span className="text-sm text-gray-600">
+              {group.category ?? "—"}
+            </span>
           </td>
-
-          {/* ← Stock level based on total across all branches */}
           <td className="px-4 py-3">
             <StockBadge current={totalStock} reorder={lowestReorder} />
           </td>
-
-          {/* ← Total quantity across all branches */}
           <td className="px-4 py-3">
             <span className="text-sm font-medium text-gray-700">
               {totalStock}
@@ -363,21 +431,64 @@ export const StocksCard = ({
               </span>
             )}
           </td>
-
           <td className="px-4 py-3">
             <div className="flex items-center gap-1">
-              <button
-                className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                onClick={() => handleDelete(group._id)}
-              >
-                <Trash2 size={15} />
-              </button>
+              {can_edit_all && (
+                <button
+                  className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(group._id);
+                  }}
+                >
+                  <Trash2 size={15} />
+                </button>
+              )}
               <button className="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors">
                 <ArrowLeftRight size={15} />
               </button>
             </div>
           </td>
         </tr>
+
+        {/* ── Expanded branch breakdown rows ── */}
+        {isExpanded &&
+          group.branches.map((b) => (
+            <tr
+              key={b._id}
+              className="bg-indigo-50/30 border-l-2 border-indigo-200"
+            >
+              <td className="px-4 py-2" />
+              <td className="px-4 py-2" />
+              <td className="px-4 py-2 pl-8">
+                <BranchTag name={b.branch?.name ?? "Branch"} />
+              </td>
+              <td className="px-4 py-2">
+                <span className="text-xs text-gray-500">
+                  {b.barcode ?? "—"}
+                </span>
+              </td>
+              <td className="px-4 py-2">
+                <span className="text-xs text-gray-500">
+                  {b.category ?? "—"}
+                </span>
+              </td>
+              <td className="px-4 py-2">
+                <StockBadge
+                  current={
+                    quantities[b._id] ?? b.stock_management.current_stock
+                  }
+                  reorder={b.stock_management.reorder_level}
+                />
+              </td>
+              <td className="px-4 py-2">
+                <span className="text-xs font-medium text-gray-600">
+                  {quantities[b._id] ?? b.stock_management.current_stock}
+                </span>
+              </td>
+              <td className="px-4 py-2" />
+            </tr>
+          ))}
       </React.Fragment>
     );
   };

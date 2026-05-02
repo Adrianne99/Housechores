@@ -13,6 +13,7 @@ import { AuthRoute } from "./pages/auth/routes";
 import { AppContext, AppContextProvider } from "./context/app_context";
 import { useIsMobile } from "./hooks/use_is_mobile";
 import Sidebar from "./components/sidebar";
+import { StaffManagement } from "./pages/staff_management";
 
 const Pos = lazy(() => import("./pages/pos/pos"));
 const Navigation = lazy(() => import("./components/navbar"));
@@ -35,27 +36,35 @@ const SavingsTracker = lazy(() => import("./pages/dashboard/savings_tracker"));
 
 const BACKEND_URL = "http://localhost:4000";
 
-// ✅ Single request — is-auth returns userData directly
 const authLoader = async () => {
   axios.defaults.withCredentials = true;
   try {
     const { data } = await axios.get(`${BACKEND_URL}/api/auth/is-auth`);
-    if (data.success) {
-      return { isLoggedIn: true, userData: data.userData };
-    }
+    if (data.success) return { isLoggedIn: true, userData: data.userData };
     return { isLoggedIn: false, userData: null };
   } catch {
     return { isLoggedIn: false, userData: null };
   }
 };
 
-// ✅ Redirects to the correct dashboard based on role
+// ── Fix: added loading guard + branch_manager redirect ─────────
 const DashboardRedirect = () => {
-  const { userData } = useContext(AppContext);
+  const { userData, loading } = useContext(AppContext);
+
+  if (loading)
+    return (
+      <div className="h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+
   if (userData?.role === "admin")
     return <Navigate to="/dashboard/admin" replace />;
+  if (userData?.role === "branch_manager")
+    return <Navigate to="/dashboard/branch-manager" replace />;
   if (userData?.role === "employee")
     return <Navigate to="/dashboard/employee" replace />;
+
   return <Navigate to="/login" replace />;
 };
 
@@ -128,7 +137,27 @@ const router = createBrowserRouter(
         <Route index element={<Hero />} />
       </Route>
 
-      {/* Guest-only pages (redirect to dashboard if already logged in) */}
+      {/* Unauthorized page */}
+      <Route
+        path="unauthorized"
+        element={
+          <div className="h-screen flex flex-col items-center justify-center gap-4">
+            <p className="text-5xl">🚫</p>
+            <p className="text-lg font-bold text-gray-800">Access Denied</p>
+            <p className="text-sm text-gray-400">
+              You don't have permission to view this page.
+            </p>
+            <a
+              href="/dashboard"
+              className="text-sm text-indigo-600 hover:underline"
+            >
+              Go back to dashboard
+            </a>
+          </div>
+        }
+      />
+
+      {/* Guest-only pages */}
       <Route element={<AuthRoute requireAuth={false} />}>
         <Route
           path="login"
@@ -149,9 +178,8 @@ const router = createBrowserRouter(
         <Route path="reset-password" element={<Reset_password />} />
       </Route>
 
-      {/* Protected pages (must be logged in) */}
+      {/* Protected pages */}
       <Route element={<AuthRoute requireAuth={true} />}>
-        {/* Smart redirect: /dashboard → /dashboard/admin or /dashboard/employee */}
         <Route path="dashboard" element={<DashboardRedirect />} />
 
         {/* ADMIN routes */}
@@ -163,6 +191,10 @@ const router = createBrowserRouter(
             <Route path="dashboard/admin/inventory" element={<Inventory />} />
             <Route path="dashboard/admin/todo-app" element={<Todo />} />
             <Route path="dashboard/admin/pos" element={<Pos />} />
+            <Route
+              path="dashboard/admin/staff-management"
+              element={<StaffManagement />}
+            />
             <Route
               path="dashboard/admin/calorie-counter"
               element={<CalorieCounter />}
@@ -178,21 +210,36 @@ const router = createBrowserRouter(
           </Route>
         </Route>
 
+        {/* BRANCH MANAGER routes */}
+        <Route
+          element={
+            <AuthRoute requireAuth={true} allowedRoles={["branch_manager"]} />
+          }
+        >
+          <Route element={<Dashboard_layout />}>
+            <Route path="dashboard/branch_manager" element={<Dashboard />} />
+            <Route
+              path="dashboard/branch-manager/inventory"
+              element={<Inventory />}
+            />
+          </Route>
+        </Route>
+
         {/* EMPLOYEE routes */}
         <Route
           element={<AuthRoute requireAuth={true} allowedRoles={["employee"]} />}
         >
           <Route element={<Dashboard_layout />}>
             <Route path="dashboard/employee" element={<Dashboard />} />
-            <Route path="dashboard/employee/todo-app" element={<Todo />} />
+            <Route path="dashboard/employee/message" element={<Todo />} />
             <Route
-              path="dashboard/employee/calorie-counter"
-              element={<CalorieCounter />}
+              path="dashboard/employee/inventory"
+              element={<Inventory />}
             />
           </Route>
         </Route>
 
-        {/* Shared protected routes (any logged-in role) */}
+        {/* Shared protected routes */}
         <Route element={<Dashboard_layout />}>
           <Route path="profile" element={<ProfileGate />} />
           <Route path="edit-profile" element={<Edit_profile />} />
