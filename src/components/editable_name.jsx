@@ -47,7 +47,7 @@ export const EditableName = ({ productId, name, brand, onUpdate }) => {
       onUpdate(form);
       handleClose();
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

@@ -15,8 +15,6 @@ import { CustomItemModal } from "../../components/_modal/custom_item";
 import { useCart } from "../../hooks/use_cart";
 import { useProductLookup } from "../../hooks/use_product_lookup";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 export default function POSPage() {
   const {
     items,
@@ -53,7 +51,7 @@ export default function POSPage() {
   // Fetch held count for badge
   useEffect(() => {
     axios
-      .get(`${BACKEND_URL}/api/held-orders`)
+      .get(`/api/held-orders`)
       .then(({ data }) => {
         if (data.success) setHeldCount(data.held_orders.length);
       })
@@ -70,7 +68,7 @@ export default function POSPage() {
       // If we resumed from a held order, delete it now that the sale completed
       if (resumedFromId) {
         try {
-          await axios.delete(`${BACKEND_URL}/api/held-orders/${resumedFromId}`);
+          await axios.delete(`/api/held-orders/${resumedFromId}`);
         } catch (err) {
           console.error("Could not delete resumed held order:", err);
         }
@@ -107,7 +105,7 @@ export default function POSPage() {
     async ({ customer_name, note }) => {
       setHoldingLoading(true);
       try {
-        const { data } = await axios.post(`${BACKEND_URL}/api/held-orders`, {
+        const { data } = await axios.post(`/api/held-orders`, {
           customer_name,
           note,
           items: items.map((i) => ({
@@ -122,6 +120,10 @@ export default function POSPage() {
           })),
         });
         if (!data.success) throw new Error(data.message);
+        if (resumedFromId) {
+          await axios.delete(`/api/held-orders/${resumedFromId}`).catch(() => {});
+          setResumedFromId(null);
+        }
         clearCart();
         setShowHoldModal(false);
         refreshHeld();
@@ -131,21 +133,45 @@ export default function POSPage() {
         setHoldingLoading(false);
       }
     },
-    [items, clearCart, refreshHeld],
+    [items, clearCart, refreshHeld, resumedFromId],
   );
+
+  // Clearing the cart also forgets which held order it came from, so a
+  // later unrelated sale doesn't delete that held order.
+  const handleClearCart = useCallback(() => {
+    clearCart();
+    setResumedFromId(null);
+  }, [clearCart]);
 
   // ─── Resume held order ──────────────────────────────────
   const handleResumeHeld = useCallback(
     (held_order, id) => {
+      if (
+        !isEmpty &&
+        !window.confirm("Replace the current cart with this held order?")
+      ) {
+        return false;
+      }
       loadFromHeld(held_order.items);
       setResumedFromId(id);
+      return true;
     },
-    [loadFromHeld],
+    [loadFromHeld, isEmpty],
   );
+
+  const anyModalOpen =
+    showCharge ||
+    showScanner ||
+    showHoldModal ||
+    showHeldPanel ||
+    showCustomItem ||
+    !!completedOrder;
 
   // ─── Global keyboard shortcuts ──────────────────────────
   useEffect(() => {
     const onKey = (e) => {
+      // Shortcuts are for the main screen only, not while a dialog is open.
+      if (anyModalOpen) return;
       switch (e.key) {
         case "F1": // add custom item
           e.preventDefault();
@@ -177,9 +203,9 @@ export default function POSPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isEmpty]);
+  }, [isEmpty, anyModalOpen]);
 
-  if (loading) {
+  if (loading && allProducts.length === 0) {
     return (
       <div className="relative w-full space-y-12 pt-3">
         <Header title="POS Terminal" />
@@ -245,7 +271,7 @@ export default function POSPage() {
             isEmpty={isEmpty}
             updateQuantity={updateQuantity}
             removeItem={removeItem}
-            clearCart={clearCart}
+            clearCart={handleClearCart}
             applyDiscount={applyDiscount}
             clearDiscount={clearDiscount}
             heldCount={heldCount}

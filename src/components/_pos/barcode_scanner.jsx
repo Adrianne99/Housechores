@@ -4,19 +4,42 @@ import { X, Camera, AlertCircle } from "lucide-react";
 
 const SCANNER_ID = "pos-barcode-scanner-region";
 
+// Ignore repeat reads of the same code within this window — the camera
+// decodes ~10 frames/sec, so one scan would otherwise fire many times.
+const DUPLICATE_WINDOW_MS = 1500;
+
 export const BarcodeScanner = ({ open, onClose, onDetected }) => {
   const scannerRef = useRef(null);
   const [error, setError] = useState(null);
   const [starting, setStarting] = useState(true);
 
+  // Keep the latest callback without restarting the camera when it changes.
+  const onDetectedRef = useRef(onDetected);
+  useEffect(() => {
+    onDetectedRef.current = onDetected;
+  }, [onDetected]);
+
   useEffect(() => {
     if (!open) return;
 
     let cancelled = false;
-    setError(null);
-    setStarting(true);
+    let last = { code: null, at: 0 };
+
+    const stop = (scanner) => {
+      if (!scanner) return;
+      const done = scanner.isScanning ? scanner.stop() : Promise.resolve();
+      done.catch(() => {}).finally(() => {
+        try {
+          scanner.clear();
+        } catch {
+          // already cleared
+        }
+      });
+    };
 
     const start = async () => {
+      setError(null);
+      setStarting(true);
       try {
         const html5QrCode = new Html5Qrcode(SCANNER_ID);
         scannerRef.current = html5QrCode;
@@ -42,14 +65,23 @@ export const BarcodeScanner = ({ open, onClose, onDetected }) => {
             aspectRatio: 1.5,
           },
           (decodedText) => {
-            // Got a barcode! Hand it off and stop scanning
-            onDetected(decodedText);
+            const now = Date.now();
+            if (decodedText === last.code && now - last.at < DUPLICATE_WINDOW_MS)
+              return;
+            last = { code: decodedText, at: now };
+            onDetectedRef.current(decodedText);
           },
           () => {
             // per-frame "no result" — ignore, this fires constantly
           },
         );
 
+        // Closed while the camera was still starting → stop it now,
+        // otherwise the stream keeps running in the background.
+        if (cancelled) {
+          stop(html5QrCode);
+          return;
+        }
         setStarting(false);
       } catch (err) {
         if (cancelled) return;
@@ -62,13 +94,10 @@ export const BarcodeScanner = ({ open, onClose, onDetected }) => {
 
     return () => {
       cancelled = true;
-      if (scannerRef.current?.isScanning) {
-        scannerRef.current.stop().catch(() => {});
-      }
-      scannerRef.current?.clear();
+      stop(scannerRef.current);
       scannerRef.current = null;
     };
-  }, [open, onDetected]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -95,6 +124,7 @@ export const BarcodeScanner = ({ open, onClose, onDetected }) => {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close scanner"
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"
           >
             <X size={18} />

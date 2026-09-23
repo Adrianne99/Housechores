@@ -1,23 +1,27 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 export const useProductLookup = () => {
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all products for the cashier's branch on mount
+  // Fetches all products for the cashier's branch. `loading` is only true
+  // for the first load, so refreshing after a sale doesn't blank the POS.
+  const refresh = useCallback(
+    () =>
+      axios
+        .get(`/api/products`)
+        .then(({ data }) => {
+          if (data.success) setAllProducts(data.products);
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false)),
+    [],
+  );
+
   useEffect(() => {
-    setLoading(true);
-    axios
-      .get(`${BACKEND_URL}/api/products`)
-      .then(({ data }) => {
-        if (data.success) setAllProducts(data.products);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    refresh();
+  }, [refresh]);
 
   // Find by barcode (exact match)
   const findByBarcode = useCallback(
@@ -44,17 +48,6 @@ export const useProductLookup = () => {
     },
     [allProducts],
   );
-
-  const refresh = useCallback(() => {
-    setLoading(true);
-    axios
-      .get(`${BACKEND_URL}/api/products`)
-      .then(({ data }) => {
-        if (data.success) setAllProducts(data.products);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
 
   return { allProducts, findByBarcode, search, loading, refresh };
 };

@@ -46,7 +46,7 @@ export const EditableBarcode = ({ productId, barcode, onUpdate }) => {
       onUpdate(value);
       handleClose();
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

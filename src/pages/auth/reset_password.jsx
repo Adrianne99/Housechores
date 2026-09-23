@@ -1,10 +1,9 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router";
 import { H2, Paragraph } from "@/components/texts";
 import { Button } from "@/components/buttons";
 import { TextInput } from "@/components/input";
-import { AppContext } from "@/context/app_context";
 import useOtpInput from "@/hooks/use_otp_input";
 import Toast from "@/components/toast";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
@@ -15,7 +14,6 @@ import { Countdown } from "@/components/timer";
 const Reset_password = () => {
   axios.defaults.withCredentials = true;
   const navigate = useNavigate();
-  const { BACKEND_URL } = useContext(AppContext);
 
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -89,7 +87,7 @@ const Reset_password = () => {
     setUiState((p) => ({ ...p, isLoading: true }));
     try {
       const { data } = await axios.post(
-        `${BACKEND_URL}/api/auth/send-reset-otp`,
+        `/api/auth/send-reset-otp`,
         { email },
       );
       if (!data.success) return showToast(data.message, "error");
@@ -118,8 +116,8 @@ const Reset_password = () => {
     setUiState((p) => ({ ...p, isLoading: true }));
     try {
       const { data } = await axios.post(
-        `${BACKEND_URL}/api/auth/verify-reset-otp`,
-        { otp: otpValue },
+        `/api/auth/verify-reset-otp`,
+        { email, otp: otpValue },
       );
       if (!data.success) return showToast(data.message, "error");
 
@@ -129,7 +127,7 @@ const Reset_password = () => {
       sessionStorage.setItem("reset_otp", otpValue);
       sessionStorage.setItem("reset_step", "password");
     } catch (err) {
-      showToast("Invalid OTP", "error");
+      showToast(err.response?.data?.message || "Invalid OTP", "error");
     } finally {
       setUiState((p) => ({ ...p, isLoading: false }));
     }
@@ -141,7 +139,7 @@ const Reset_password = () => {
     setUiState((p) => ({ ...p, isLoading: true }));
     try {
       const { data } = await axios.post(
-        `${BACKEND_URL}/api/auth/send-reset-otp`,
+        `/api/auth/send-reset-otp`,
         { email },
       );
       if (!data.success) return showToast(data.message, "error");
@@ -156,7 +154,7 @@ const Reset_password = () => {
       setIsTimerActive(true);
       showToast("OTP Resent!");
     } catch (err) {
-      showToast("Failed to resend", "error");
+      showToast(err.response?.data?.message || "Failed to resend", "error");
     } finally {
       setUiState((p) => ({ ...p, isLoading: false }));
     }
@@ -177,7 +175,7 @@ const Reset_password = () => {
     setUiState((p) => ({ ...p, isLoading: true }));
     try {
       const { data } = await axios.post(
-        `${BACKEND_URL}/api/auth/reset-password`,
+        `/api/auth/reset-password`,
         {
           email,
           otp,
@@ -190,7 +188,10 @@ const Reset_password = () => {
       sessionStorage.clear();
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
-      showToast("Failed to reset password", "error");
+      showToast(
+        err.response?.data?.message || "Failed to reset password",
+        "error",
+      );
     } finally {
       setUiState((p) => ({ ...p, isLoading: false }));
     }

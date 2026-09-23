@@ -5,8 +5,6 @@ import axios from "axios";
 import { ModalShell, SimpleFooter } from "../modal_shell";
 import { ErrorBanner } from "../form_primitives";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 /**
  * Generic confirmation modal.
  *
@@ -91,7 +89,7 @@ export const Deactivate_Staff_Modal = ({ open, onClose, onSuccess, staff }) => {
       confirmLabel="Deactivate"
       confirmVariant="danger"
       method="patch"
-      url={`${BACKEND_URL}/api/staff/${staff._id}/deactivate`}
+      url={`/api/staff/${staff._id}/deactivate`}
     />
   );
 };
@@ -109,7 +107,7 @@ export const Reactivate_Staff_Modal = ({ open, onClose, onSuccess, staff }) => {
       confirmLabel="Reactivate"
       confirmVariant="primary"
       method="patch"
-      url={`${BACKEND_URL}/api/staff/${staff._id}/reactivate`}
+      url={`/api/staff/${staff._id}/reactivate`}
     />
   );
 };
@@ -127,7 +125,7 @@ export const Delete_Staff_Modal = ({ open, onClose, onSuccess, staff }) => {
       confirmLabel="Delete forever"
       confirmVariant="danger"
       method="delete"
-      url={`${BACKEND_URL}/api/staff/${staff._id}`}
+      url={`/api/staff/${staff._id}`}
     />
   );
 };

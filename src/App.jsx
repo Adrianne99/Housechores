@@ -1,5 +1,4 @@
-import { useContext } from "react";
-import axios from "axios";
+import { useContext, lazy, Suspense } from "react";
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -7,71 +6,70 @@ import {
   Route,
   RouterProvider,
   Navigate,
-  useLoaderData,
+  Link,
 } from "react-router";
 import { AuthRoute } from "./pages/auth/routes";
 import { AppContext, AppContextProvider } from "./context/app_context";
 import { useIsMobile } from "./hooks/use_is_mobile";
 import Sidebar from "./components/sidebar";
-
-// ─── Public ──────────────────────────────────────────────────
-import Hero from "./pages/public/hero";
 import Navigation from "./components/navbar";
 
+// Pages are code-split so each role only downloads what it uses.
+// ─── Public ──────────────────────────────────────────────────
+const Hero = lazy(() => import("./pages/public/hero"));
+
 // ─── Auth ────────────────────────────────────────────────────
-import Login from "./pages/auth/login";
-import Register from "./pages/auth/register";
-import Reset_password from "./pages/auth/reset_password";
-import Email_verification from "./pages/auth/email_verification";
+const Login = lazy(() => import("./pages/auth/login"));
+const Register = lazy(() => import("./pages/auth/register"));
+const Reset_password = lazy(() => import("./pages/auth/reset_password"));
+const Email_verification = lazy(
+  () => import("./pages/auth/email_verification"),
+);
 
 // ─── Admin ───────────────────────────────────────────────────
-import AdminDashboard from "./pages/admin/admin_dashboard";
-import AdminInventory from "./pages/admin/admin_inventory";
-import StaffManagement from "./pages/_shared/staff_management";
-import AdminOrderHistory from "./pages/admin/admin_history";
+const AdminDashboard = lazy(() => import("./pages/admin/admin_dashboard"));
+const AdminInventory = lazy(() => import("./pages/admin/admin_inventory"));
+const StaffManagement = lazy(() => import("./pages/_shared/staff_management"));
+const AdminOrderHistory = lazy(() => import("./pages/admin/admin_history"));
+
 // ─── Manager ─────────────────────────────────────────────────
-import ManagerDashboard from "./pages/manager/manager_dashboard";
-import ManagerInventory from "./pages/manager/manager_inventory";
-import ManagerOrderHistory from "./pages/manager/manager_history";
+const ManagerDashboard = lazy(
+  () => import("./pages/manager/manager_dashboard"),
+);
+const ManagerInventory = lazy(
+  () => import("./pages/manager/manager_inventory"),
+);
+const ManagerOrderHistory = lazy(
+  () => import("./pages/manager/manager_history"),
+);
 
 // ─── Employee ────────────────────────────────────────────────
-import Staff_inventory from "./pages/employee/staff_inventory";
-import EmployeeOrderHistory from "./pages/employee/order_history";
+const Staff_inventory = lazy(() => import("./pages/employee/staff_inventory"));
+const EmployeeOrderHistory = lazy(
+  () => import("./pages/employee/order_history"),
+);
 
 // ─── Shared ──────────────────────────────────────────────────
-import Pos from "./pages/_shared/pos";
-import MobileProfile from "./pages/profile/mobile_profile";
-import DesktopProfile from "./pages/profile/desktop_profile";
-import Edit_profile from "./pages/profile/edit_profile";
+const Pos = lazy(() => import("./pages/_shared/pos"));
+const MobileProfile = lazy(() => import("./pages/profile/mobile_profile"));
+const DesktopProfile = lazy(() => import("./pages/profile/desktop_profile"));
+const Edit_profile = lazy(() => import("./pages/profile/edit_profile"));
 
-// ─── Temp ────────────────────────────────────────────────────
-// Employee still reuses AdminDashboard until employee_dashboard.jsx is built.
-const Dashboard = AdminDashboard;
+// Employee reuses the dashboard component (stats are scoped server-side
+// to the employee's own sales) until a dedicated one is built.
+const EmployeeDashboard = AdminDashboard;
 
-// ─── Config ──────────────────────────────────────────────────
-const BACKEND_URL = "http://localhost:4000";
-
-const authLoader = async () => {
-  axios.defaults.withCredentials = true;
-  try {
-    const { data } = await axios.get(`${BACKEND_URL}/api/auth/is-auth`);
-    if (data.success) return { isLoggedIn: true, userData: data.userData };
-    return { isLoggedIn: false, userData: null };
-  } catch {
-    return { isLoggedIn: false, userData: null };
-  }
-};
+const PageLoader = () => (
+  <div className="h-screen flex items-center justify-center text-sm text-gray-400">
+    Loading...
+  </div>
+);
 
 // ─── Redirect ────────────────────────────────────────────────
 const DashboardRedirect = () => {
   const { userData, loading } = useContext(AppContext);
 
-  if (loading)
-    return (
-      <div className="h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
+  if (loading) return <PageLoader />;
 
   if (userData?.role === "admin")
     return <Navigate to="/admin/dashboard" replace />;
@@ -88,7 +86,9 @@ const App_layout = () => (
   <div className="w-full h-full">
     <div className="bg-white w-full h-fit relative">
       <Navigation />
-      <Outlet />
+      <Suspense fallback={<PageLoader />}>
+        <Outlet />
+      </Suspense>
     </div>
   </div>
 );
@@ -98,11 +98,12 @@ const Dashboard_layout = () => (
     <div className="hidden md:block z-100">
       <Sidebar />
     </div>
-    <div className="md:hidden fixed inset-0 z-50">
-      <Navigation />
+    {/* Only the top bar area — a full-screen wrapper here blocked taps. */}
+    <div className="md:hidden fixed inset-x-0 top-0 z-50">
+      <Navigation dashboard />
     </div>
     <div className="flex flex-col flex-1 min-w-0 pt-12 md:pt-0">
-      <main className="flex-1 transition-all duration-300 md:ml-20 lg:ml-[220px]">
+      <main className="flex-1 transition-all duration-300 md:ml-20 lg:ml-[280px]">
         <div className="min-h-full w-full bg-[#F3F3FF] md:rounded-tl-3xl relative overflow-hidden p-4">
           <div
             className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -112,12 +113,20 @@ const Dashboard_layout = () => (
             }}
           />
           <div className="relative z-10 max-w-[1500px] mx-auto w-full">
-            <Outlet />
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
           </div>
         </div>
       </main>
     </div>
   </div>
+);
+
+const Guest_layout = () => (
+  <Suspense fallback={<PageLoader />}>
+    <Outlet />
+  </Suspense>
 );
 
 // ─── Gates ───────────────────────────────────────────────────
@@ -126,28 +135,27 @@ const ProfileGate = () => {
   return isMobile ? <MobileProfile /> : <DesktopProfile />;
 };
 
-const Root = () => {
-  const initialAuth = useLoaderData();
-  return (
-    <AppContextProvider initialAuth={initialAuth}>
-      <Outlet />
-    </AppContextProvider>
-  );
-};
+const Root = () => (
+  <AppContextProvider>
+    <Outlet />
+  </AppContextProvider>
+);
 
-const HydrateFallback = () => (
-  <div className="h-screen flex items-center justify-center">Loading...</div>
+const Message_page = ({ icon, title, text }) => (
+  <div className="h-screen flex flex-col items-center justify-center gap-4">
+    <p className="text-5xl">{icon}</p>
+    <p className="text-lg font-bold text-gray-800">{title}</p>
+    <p className="text-sm text-gray-400">{text}</p>
+    <Link to="/dashboard" className="text-sm text-indigo-600 hover:underline">
+      Go back to dashboard
+    </Link>
+  </div>
 );
 
 // ─── Router ──────────────────────────────────────────────────
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route
-      path="/"
-      element={<Root />}
-      loader={authLoader}
-      HydrateFallback={HydrateFallback}
-    >
+    <Route path="/" element={<Root />}>
       {/* ─── Public ─── */}
       <Route element={<App_layout />}>
         <Route index element={<Hero />} />
@@ -157,41 +165,35 @@ const router = createBrowserRouter(
       <Route
         path="unauthorized"
         element={
-          <div className="h-screen flex flex-col items-center justify-center gap-4">
-            <p className="text-5xl">🚫</p>
-            <p className="text-lg font-bold text-gray-800">Access Denied</p>
-            <p className="text-sm text-gray-400">
-              You don't have permission to view this page.
-            </p>
-            <a
-              href="/dashboard"
-              className="text-sm text-indigo-600 hover:underline"
-            >
-              Go back to dashboard
-            </a>
-          </div>
+          <Message_page
+            icon="🚫"
+            title="Access Denied"
+            text="You don't have permission to view this page."
+          />
         }
       />
 
       {/* ─── Guest ─── */}
       <Route element={<AuthRoute requireAuth={false} />}>
-        <Route
-          path="login"
-          element={
-            <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
-              <Login />
-            </div>
-          }
-        />
-        <Route
-          path="register"
-          element={
-            <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
-              <Register />
-            </div>
-          }
-        />
-        <Route path="reset-password" element={<Reset_password />} />
+        <Route element={<Guest_layout />}>
+          <Route
+            path="login"
+            element={
+              <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
+                <Login />
+              </div>
+            }
+          />
+          <Route
+            path="register"
+            element={
+              <div className="bg-linear-to-br from-primary via-second-gradient to-third-gradient">
+                <Register />
+              </div>
+            }
+          />
+          <Route path="reset-password" element={<Reset_password />} />
+        </Route>
       </Route>
 
       {/* ─── Protected ─── */}
@@ -229,10 +231,14 @@ const router = createBrowserRouter(
               path="/branch_manager/inventory"
               element={<ManagerInventory />}
             />
+            <Route
+              path="/branch_manager/staff-management"
+              element={<StaffManagement />}
+            />
             <Route path="/branch_manager/pos" element={<Pos />} />
             <Route
               path="/branch_manager/history"
-              element={<AdminOrderHistory />}
+              element={<ManagerOrderHistory />}
             />
           </Route>
         </Route>
@@ -242,7 +248,7 @@ const router = createBrowserRouter(
           element={<AuthRoute requireAuth={true} allowedRoles={["employee"]} />}
         >
           <Route element={<Dashboard_layout />}>
-            <Route path="/employee/dashboard" element={<Dashboard />} />
+            <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
             <Route path="/employee/inventory" element={<Staff_inventory />} />
             <Route path="/employee/pos" element={<Pos />} />
             <Route
@@ -259,6 +265,18 @@ const router = createBrowserRouter(
           <Route path="verify-account" element={<Email_verification />} />
         </Route>
       </Route>
+
+      {/* ─── 404 ─── */}
+      <Route
+        path="*"
+        element={
+          <Message_page
+            icon="🔍"
+            title="Page not found"
+            text="The page you're looking for doesn't exist."
+          />
+        }
+      />
     </Route>,
   ),
 );

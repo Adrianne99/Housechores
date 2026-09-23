@@ -70,7 +70,7 @@ export const EditablePrice = ({ productId, pricing, field, onUpdate }) => {
       onUpdate(form);
       handleClose();
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Search, ScanLine } from "lucide-react";
 
 export const ProductSearch = ({
@@ -8,7 +8,10 @@ export const ProductSearch = ({
   inputRef: externalInputRef,
 }) => {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
+  const suggestions = useMemo(
+    () => (query.trim() ? search(query) : []),
+    [query, search],
+  );
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
 
@@ -28,20 +31,10 @@ export const ProductSearch = ({
     inputRef.current?.focus();
   }, []);
 
-  // Handle search results when query changes
-  useEffect(() => {
-    if (!query.trim()) {
-      setSuggestions([]);
-      return;
-    }
-    setSuggestions(search(query));
-  }, [query, search]);
-
   const handlePick = useCallback(
     (product) => {
       onProductPicked(product);
       setQuery("");
-      setSuggestions([]);
       setShowSuggestions(false);
       inputRef.current?.focus();
     },
@@ -64,7 +57,6 @@ export const ProductSearch = ({
       }
       if (e.key === "Escape") {
         setQuery("");
-        setSuggestions([]);
         setShowSuggestions(false);
       }
     },

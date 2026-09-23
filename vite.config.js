@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [tailwindcss()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"), // '@' = src
-      "@components": path.resolve(__dirname, "./src/components"), // '@components' = src/components
+      "@": path.resolve(import.meta.dirname, "./src"), // '@' = src
+      "@components": path.resolve(import.meta.dirname, "./src/components"), // '@components' = src/components
       // Add more aliases as needed
     },
   },

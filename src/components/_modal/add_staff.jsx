@@ -15,8 +15,6 @@ import {
 import { AppContext } from "../../context/app_context";
 import { useForm } from "../../hooks/use_form";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 const EMPTY_FORM = {
   name: "",
   email: "",
@@ -40,7 +38,7 @@ export const Add_Staff_Modal = ({ open, onClose, onSuccess }) => {
   useEffect(() => {
     if (!open || isManager) return;
     axios
-      .get(`${BACKEND_URL}/api/branches`)
+      .get(`/api/branches`)
       .then(({ data }) => {
         if (data.success) setBranches(data.branches);
       })
@@ -76,7 +74,7 @@ export const Add_Staff_Modal = ({ open, onClose, onSuccess }) => {
 
     setLoading(true);
     try {
-      const { data } = await axios.post(`${BACKEND_URL}/api/staff`, {
+      const { data } = await axios.post(`/api/staff`, {
         ...form,
         hourly_rate: Number(form.hourly_rate) || 0,
       });

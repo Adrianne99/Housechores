@@ -9,13 +9,13 @@ import axios from "axios";
 const MobileProfile = () => {
   const navigate = useNavigate();
 
-  const { userData, BACKEND_URL, setIsLoggedIn, setUserData } =
+  const { userData, setIsLoggedIn, setUserData } =
     useContext(AppContext);
 
   const logout = async () => {
     try {
       axios.defaults.withCredentials = true;
-      const { data } = await axios.get(`${BACKEND_URL}/api/auth/logout`);
+      const { data } = await axios.get(`/api/auth/logout`);
 
       if (data.success) {
         setIsLoggedIn(false);

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Funnel, Plus, Download, X, Trash2 } from "lucide-react";
 import axios from "axios";
 
@@ -8,11 +8,10 @@ import { Button } from "../../components/buttons";
 import { BranchDropdown } from "../../components/dropdown";
 import { BranchLabel } from "../../components/branch_label";
 import { H4 } from "../../components/texts";
-import { Add_Product_Modal, Edit_Product_Modal } from "../../components/modal";
+import { AddProductModal, EditProductModal } from "../../components/modal";
 import { FILTER_OPTIONS } from "../../constants/inventory";
 import { useExportCSV } from "../../hooks/use_export";
 import { useThrottle } from "../../hooks/use_throttle";
-import { AppContext } from "../../context/app_context";
 
 // ─── Defaults ────────────────────────────────────────────────
 const DEFAULTS = {
@@ -126,7 +125,6 @@ const CARD_BUILDERS = {
 };
 
 const InventoryLayout = ({ permissions = DEFAULTS }) => {
-  const { userData } = useContext(AppContext);
   const p = { ...DEFAULTS, ...permissions };
 
   const [open, setOpen] = useState(false);
@@ -300,7 +298,7 @@ const InventoryLayout = ({ permissions = DEFAULTS }) => {
         </div>
 
         {p.can_add_product && (
-          <Add_Product_Modal
+          <AddProductModal
             open={modal}
             onClose={() => setModal(false)}
             onSuccess={() => setRefresh((prev) => prev + 1)}
@@ -308,7 +306,7 @@ const InventoryLayout = ({ permissions = DEFAULTS }) => {
         )}
 
         {p.can_add_product && (
-          <Edit_Product_Modal
+          <EditProductModal
             open={editModal}
             products={editProduct}
             onClose={() => {

@@ -13,8 +13,6 @@ import {
   Delete_Staff_Modal,
 } from "../../components/_modal/confirm";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 export default function StaffPage() {
   const { userData } = useContext(AppContext);
   const isAdmin = ["admin", "owner"].includes(userData?.role);
@@ -30,13 +28,15 @@ export default function StaffPage() {
   const [reactivateTarget, setReactivateTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const triggerRefresh = () => setRefresh((p) => p + 1);
+  const triggerRefresh = () => {
+    setLoading(true);
+    setRefresh((p) => p + 1);
+  };
 
   // Fetch staff list
   useEffect(() => {
-    setLoading(true);
     axios
-      .get(`${BACKEND_URL}/api/staff`)
+      .get(`/api/staff`)
       .then(({ data }) => {
         if (data.success) setStaff(data.staff);
       })

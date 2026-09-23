@@ -62,7 +62,13 @@ export const ReceiptOverlay = ({ open, order, onNewSale }) => {
             </div>
             {order.discount_amount > 0 && (
               <div className="flex justify-between text-gray-500">
-                <span>Discount</span>
+                <span>
+                  {order.discount?.type === "senior"
+                    ? "Senior citizen discount"
+                    : order.discount?.type === "pwd"
+                      ? "PWD discount"
+                      : "Discount"}
+                </span>
                 <span className="tabular-nums">
                   -₱{order.discount_amount.toFixed(2)}
                 </span>
@@ -73,11 +79,21 @@ export const ReceiptOverlay = ({ open, order, onNewSale }) => {
               <span className="tabular-nums">₱{order.total.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-xs text-gray-400">
-              <span>VAT (12%, included)</span>
+              <span>
+                {order.vat_exempt ? "VAT-exempt sale" : "VAT (12%, included)"}
+              </span>
               <span className="tabular-nums">
                 ₱{order.vat_amount.toFixed(2)}
               </span>
             </div>
+            {order.discount?.id_number && (
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>
+                  {order.discount.type === "pwd" ? "PWD" : "Senior"} ID no.
+                </span>
+                <span>{order.discount.id_number}</span>
+              </div>
+            )}
           </div>
 
           <div className="h-px bg-dashed border-t border-dashed border-gray-200" />

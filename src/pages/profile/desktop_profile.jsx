@@ -1,12 +1,9 @@
 import React, { useContext } from "react";
 import { MoveLeft, UserPen, Camera } from "lucide-react";
 import { H2, H3, H4, H6 } from "../../components/texts";
-import { useNavigate } from "react-router";
 import { AppContext } from "../../context/app_context";
 
 const DesktopProfile = () => {
-  const navigate = useNavigate();
-
   const { userData } = useContext(AppContext);
 
   return (

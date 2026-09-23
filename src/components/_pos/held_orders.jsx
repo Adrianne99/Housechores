@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { X, Pause, Trash2, ArrowRight, Clock } from "lucide-react";
 import axios from "axios";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 export const HeldOrdersPanel = ({ open, onClose, onResume, refreshKey }) => {
   const [held, setHeld] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,7 +12,7 @@ export const HeldOrdersPanel = ({ open, onClose, onResume, refreshKey }) => {
     setLoading(true);
     setError(null);
     axios
-      .get(`${BACKEND_URL}/api/held-orders`)
+      .get(`/api/held-orders`)
       .then(({ data }) => {
         if (data.success) setHeld(data.held_orders);
       })
@@ -24,10 +22,10 @@ export const HeldOrdersPanel = ({ open, onClose, onResume, refreshKey }) => {
 
   const handleResume = async (id) => {
     try {
-      const { data } = await axios.get(`${BACKEND_URL}/api/held-orders/${id}`);
+      const { data } = await axios.get(`/api/held-orders/${id}`);
       if (!data.success) throw new Error(data.message);
-      onResume(data.held_order, id);
-      onClose();
+      // onResume returns false if the cashier chose to keep their cart
+      if (onResume(data.held_order, id) !== false) onClose();
     } catch (err) {
       setError(err.response?.data?.message || err.message);
     }
@@ -37,7 +35,7 @@ export const HeldOrdersPanel = ({ open, onClose, onResume, refreshKey }) => {
     if (!confirm("Discard this held order?")) return;
     try {
       const { data } = await axios.delete(
-        `${BACKEND_URL}/api/held-orders/${id}`,
+        `/api/held-orders/${id}`,
       );
       if (!data.success) throw new Error(data.message);
       setHeld((prev) => prev.filter((h) => h._id !== id));

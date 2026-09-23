@@ -11,7 +11,7 @@ import { ShieldCheck } from "lucide-react";
 
 const Email_verification = () => {
   axios.defaults.withCredentials = true;
-  const { BACKEND_URL, isLoggedIn, userData, getUserData } =
+  const { isLoggedIn, userData, getUserData } =
     useContext(AppContext);
   const navigate = useNavigate();
 
@@ -45,7 +45,7 @@ const Email_verification = () => {
       }
 
       const { data } = await axios.post(
-        `${BACKEND_URL}/api/auth/verify-account`,
+        `/api/auth/verify-account`,
         { otp }
       );
 

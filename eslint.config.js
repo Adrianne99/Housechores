@@ -23,7 +23,20 @@ export default defineConfig([
       },
     },
     rules: {
-      "no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]" }],
+      "no-unused-vars": [
+        "error",
+        { varsIgnorePattern: "^[A-Z_]", argsIgnorePattern: "^[A-Z_]" },
+      ],
+      // Context objects are exported next to their provider component.
+      "react-refresh/only-export-components": [
+        "error",
+        { allowConstantExport: true, allowExportNames: ["AppContext"] },
+      ],
     },
+  },
+  {
+    // Config files run in Node, not the browser.
+    files: ["*.config.js"],
+    languageOptions: { globals: globals.node },
   },
 ]);

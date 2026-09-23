@@ -1,21 +1,17 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useCallback, useEffect, useState } from "react";
 import axios from "axios";
-axios.defaults.withCredentials = true;
+import { AUTH_EXPIRED_EVENT } from "../lib/api";
 
 export const AppContext = createContext();
 
 export const AppContextProvider = ({ children }) => {
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const getUserData = async () => {
+  const getUserData = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${BACKEND_URL}/api/user/data`, {
-        withCredentials: true,
-      });
+      const { data } = await axios.get("/api/user/data");
 
       if (data.success) {
         setIsLoggedIn(true);
@@ -30,14 +26,24 @@ export const AppContextProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     getUserData();
+  }, [getUserData]);
+
+  // Any API call that comes back 401 (expired token, deactivated account)
+  // logs the user out so AuthRoute sends them to /login.
+  useEffect(() => {
+    const on_expired = () => {
+      setIsLoggedIn(false);
+      setUserData(null);
+    };
+    window.addEventListener(AUTH_EXPIRED_EVENT, on_expired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, on_expired);
   }, []);
 
   const value = {
-    BACKEND_URL,
     isLoggedIn,
     userData,
     loading,

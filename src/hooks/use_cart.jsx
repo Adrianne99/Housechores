@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-
-const VAT_RATE = 0.12;
+import { compute_totals, line_subtotal } from "../utils/pricing";
 
 export const useCart = () => {
   const [items, setItems] = useState([]);
@@ -42,7 +41,7 @@ export const useCart = () => {
   const addCustomItem = useCallback(
     ({ name, brand, unit, unit_price, quantity }) => {
       if (!name?.trim() || !Number.isFinite(Number(unit_price))) return false;
-      const qty = Number(quantity) || 1;
+      const qty = Math.max(1, Math.floor(Number(quantity)) || 1);
 
       setItems((prev) => [
         ...prev,
@@ -62,8 +61,11 @@ export const useCart = () => {
     [],
   );
 
+  // Whole units only. A blank/invalid entry is ignored (the line stays);
+  // use the remove button — or type 0 — to delete a line.
   const updateQuantity = useCallback((inventory_id, quantity) => {
-    const qty = Number(quantity);
+    if (quantity === "" || quantity === null || quantity === undefined) return;
+    const qty = Math.floor(Number(quantity));
     if (!Number.isFinite(qty) || qty < 0) return;
     setItems((prev) => {
       if (qty === 0) return prev.filter((i) => i.inventory_id !== inventory_id);
@@ -107,44 +109,15 @@ export const useCart = () => {
   }, []);
 
   // ─── Totals (with discount) ─────────────────────────────
+  // Same math the server uses (utils/pricing.js), so the total shown here
+  // matches what gets charged. Senior/PWD: subtotal / 1.12 × 0.8, VAT-exempt.
   const totals = useMemo(() => {
     const subtotal = items.reduce(
-      (sum, i) => sum + i.unit_price * i.quantity,
+      (sum, i) => sum + line_subtotal(i.unit_price, i.quantity),
       0,
     );
-
-    let discount_amount = 0;
-    let vat_exempt = false;
-
-    if (discount && discount.type !== "none") {
-      if (discount.type === "senior" || discount.type === "pwd") {
-        const subtotal_vat_excl = subtotal / (1 + VAT_RATE);
-        discount_amount = +(subtotal_vat_excl * 0.2).toFixed(2);
-        vat_exempt = true;
-      } else if (discount.type === "percent") {
-        discount_amount = +(
-          (subtotal * Number(discount.value || 0)) /
-          100
-        ).toFixed(2);
-      } else if (discount.type === "amount") {
-        discount_amount = Math.min(Number(discount.value || 0), subtotal);
-      }
-    }
-
-    const total = +(subtotal - discount_amount).toFixed(2);
-    const vat_amount = vat_exempt
-      ? 0
-      : +((total * VAT_RATE) / (1 + VAT_RATE)).toFixed(2);
     const item_count = items.reduce((sum, i) => sum + i.quantity, 0);
-
-    return {
-      subtotal: +subtotal.toFixed(2),
-      discount_amount,
-      total,
-      vat_amount,
-      vat_exempt,
-      item_count,
-    };
+    return { ...compute_totals(subtotal, discount), item_count };
   }, [items, discount]);
 
   return {

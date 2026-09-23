@@ -92,6 +92,7 @@ export const CartPanel = ({
                   </div>
                   <button
                     onClick={() => removeItem(item.inventory_id)}
+                    aria-label={`Remove ${item.name}`}
                     className="p-1 rounded-lg hover:bg-red-100 text-gray-300 hover:text-red-500 shrink-0"
                   >
                     <Trash2 size={14} />
@@ -104,12 +105,17 @@ export const CartPanel = ({
                       onClick={() =>
                         updateQuantity(item.inventory_id, item.quantity - 1)
                       }
+                      aria-label={`Decrease ${item.name}`}
                       className="w-7 h-7 rounded-lg bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 flex items-center justify-center text-gray-600 hover:text-indigo-600"
                     >
                       <Minus size={12} />
                     </button>
                     <input
                       type="number"
+                      min={1}
+                      step={1}
+                      inputMode="numeric"
+                      aria-label={`Quantity of ${item.name}`}
                       value={item.quantity}
                       onChange={(e) =>
                         updateQuantity(item.inventory_id, e.target.value)
@@ -120,6 +126,7 @@ export const CartPanel = ({
                       onClick={() =>
                         updateQuantity(item.inventory_id, item.quantity + 1)
                       }
+                      aria-label={`Increase ${item.name}`}
                       disabled={
                         Number.isFinite(item.available_stock) &&
                         item.quantity >= item.available_stock

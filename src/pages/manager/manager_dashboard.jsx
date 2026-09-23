@@ -1,7 +1,3 @@
-import React from "react";
-
-const ManagerDashboard = () => {
-  return <div>Dashboard</div>;
-};
-
-export default ManagerDashboard;
+// Managers use the shared dashboard. /api/dashboard/stats scopes every
+// number to the manager's own branch on the server.
+export { default } from "../admin/admin_dashboard";

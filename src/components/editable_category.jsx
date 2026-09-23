@@ -71,7 +71,7 @@ export const EditableCategory = ({ productId, category, onUpdate }) => {
       setEditing(false);
       setError(null);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

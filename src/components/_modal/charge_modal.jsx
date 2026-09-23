@@ -4,8 +4,6 @@ import axios from "axios";
 
 import { Button } from "../buttons";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000];
 
 export const ChargeModal = ({
@@ -54,7 +52,7 @@ export const ChargeModal = ({
     setLoading(true);
     setError(null);
     try {
-      const { data } = await axios.post(`${BACKEND_URL}/api/orders`, {
+      const { data } = await axios.post(`/api/orders`, {
         items: items.map((i) =>
           i.is_custom
             ? {

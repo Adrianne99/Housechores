@@ -14,8 +14,6 @@ import {
 import { AppContext } from "../../context/app_context";
 import { useForm } from "../../hooks/use_form";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 const EMPTY_FORM = {
   name: "",
   email: "",
@@ -53,7 +51,7 @@ export const Edit_Staff_Modal = ({ open, onClose, onSuccess, staff }) => {
   useEffect(() => {
     if (!open || !isAdmin) return;
     axios
-      .get(`${BACKEND_URL}/api/branches`)
+      .get(`/api/branches`)
       .then(({ data }) => {
         if (data.success) setBranches(data.branches);
       })
@@ -82,7 +80,7 @@ export const Edit_Staff_Modal = ({ open, onClose, onSuccess, staff }) => {
       }
 
       const { data } = await axios.put(
-        `${BACKEND_URL}/api/staff/${staff._id}`,
+        `/api/staff/${staff._id}`,
         payload,
       );
       if (!data.success) throw new Error(data.message || "Failed to update.");

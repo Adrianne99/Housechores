@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
@@ -6,7 +6,6 @@ import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { H2, Paragraph } from "@/components/texts";
 import { TextInput } from "@/components/input";
 import { Button } from "@/components/buttons";
-import { AppContext } from "@/context/app_context";
 import { cn } from "@/utils/utils";
 import logo from "@/assets/logo.png";
 import Toast from "@/components/toast";
@@ -16,7 +15,6 @@ axios.defaults.withCredentials = true;
 
 const Register = () => {
   const navigate = useNavigate();
-  const { BACKEND_URL } = useContext(AppContext);
 
   const [toast, setToast] = useState({
     show: false,
@@ -92,7 +90,7 @@ const Register = () => {
 
     try {
       const { data } = await axios.post(
-        `${BACKEND_URL}/api/auth/register`,
+        `/api/auth/register`,
         {
           name: formData.name,
           email: formData.email,

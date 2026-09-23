@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useMemo } from "react";
+import React, { useState, useContext, useMemo } from "react";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
@@ -16,7 +16,7 @@ axios.defaults.withCredentials = true;
 
 const Login = () => {
   const navigate = useNavigate();
-  const { BACKEND_URL, setIsLoggedIn, setUserData } = useContext(AppContext);
+  const { setIsLoggedIn, setUserData } = useContext(AppContext);
 
   // const { fetchData, isloading, isError } = useSampleFetchQuery();
   // const fetchData = fetchData.data.data;
@@ -76,7 +76,7 @@ const Login = () => {
     setUiState((p) => ({ ...p, isLoading: true }));
 
     try {
-      const { data } = await axios.post(`${BACKEND_URL}/api/auth/login`, {
+      const { data } = await axios.post(`/api/auth/login`, {
         email: formData.email,
         password: formData.password,
       });

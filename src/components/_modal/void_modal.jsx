@@ -3,8 +3,6 @@ import { XCircle, X } from "lucide-react";
 import axios from "axios";
 import { Button } from "../buttons";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 export const VoidModal = ({ open, onClose, order, onSuccess }) => {
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,7 +27,7 @@ export const VoidModal = ({ open, onClose, order, onSuccess }) => {
     setError(null);
     try {
       const { data } = await axios.patch(
-        `${BACKEND_URL}/api/orders/${order._id}/void`,
+        `/api/orders/${order._id}/void`,
         { reason: reason.trim() },
       );
       if (!data.success) throw new Error(data.message);

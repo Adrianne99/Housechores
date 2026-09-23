@@ -51,7 +51,7 @@ export const EditableStock = ({ productId, stock_management, onUpdate }) => {
       onUpdate(form);
       handleClose();
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

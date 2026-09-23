@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
 export const useOrders = ({ initialFilters = {} } = {}) => {
   const [orders, setOrders] = useState([]);
   const [total, setTotal] = useState(0);
@@ -28,13 +26,17 @@ export const useOrders = ({ initialFilters = {} } = {}) => {
       [key]: value,
       skip: key !== "skip" ? 0 : value, // reset to page 1 on filter change
     }));
+    setLoading(true);
   }, []);
 
-  const triggerRefresh = useCallback(() => setRefresh((r) => r + 1), []);
+  const triggerRefresh = useCallback(() => {
+    setLoading(true);
+    setRefresh((r) => r + 1);
+  }, []);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
+    // Ignore responses from a request that a newer filter change replaced.
+    let stale = false;
 
     const params = {};
     Object.entries(filters).forEach(([k, v]) => {
@@ -42,15 +44,24 @@ export const useOrders = ({ initialFilters = {} } = {}) => {
     });
 
     axios
-      .get(`${BACKEND_URL}/api/orders`, { params })
+      .get(`/api/orders`, { params })
       .then(({ data }) => {
+        if (stale) return;
+        setError(null);
         if (data.success) {
           setOrders(data.orders);
           setTotal(data.total);
         }
       })
-      .catch((err) => setError(err.response?.data?.message || err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!stale) setError(err.response?.data?.message || err.message);
+      })
+      .finally(() => {
+        if (!stale) setLoading(false);
+      });
+    return () => {
+      stale = true;
+    };
   }, [filters, refresh]);
 
   return {

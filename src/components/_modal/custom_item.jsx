@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { PackagePlus, X } from "lucide-react";
 import { Button } from "../buttons";
 
-export const CustomItemModal = ({ open, onClose, onAdd }) => {
+// Body mounts only while open, so every opening starts with a fresh form.
+export const CustomItemModal = (props) =>
+  props.open ? <CustomItemModalBody {...props} /> : null;
+
+const CustomItemModalBody = ({ onClose, onAdd }) => {
   const [name, setName] = useState("");
   const [unit_price, setUnitPrice] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -11,17 +15,9 @@ export const CustomItemModal = ({ open, onClose, onAdd }) => {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (open) {
-      setName("");
-      setUnitPrice("");
-      setQuantity("1");
-      setUnit("");
-      setError(null);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [open]);
-
-  if (!open) return null;
+    const t = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleAdd = () => {
     if (!name.trim()) return setError("Name is required.");

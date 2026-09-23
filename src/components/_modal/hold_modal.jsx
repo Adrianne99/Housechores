@@ -2,20 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { Pause, X } from "lucide-react";
 import { Button } from "../buttons";
 
-export const HoldModal = ({ open, onClose, onConfirm, loading }) => {
+// Body mounts only while open, so every opening starts with a fresh form.
+export const HoldModal = (props) =>
+  props.open ? <HoldModalBody {...props} /> : null;
+
+const HoldModalBody = ({ onClose, onConfirm, loading }) => {
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (open) {
-      setName("");
-      setNote("");
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [open]);
-
-  if (!open) return null;
+    const t = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleSubmit = () => {
     onConfirm({ customer_name: name, note });
