@@ -33,3 +33,23 @@ export const StockBadge = ({ current, reorder }) => {
     </div>
   );
 };
+
+export const StatusBadge = ({ status }) => {
+  const styles = {
+    completed: "bg-green-100 text-green-700",
+    voided: "bg-gray-100 text-gray-500",
+    refunded: "bg-orange-100 text-orange-700",
+  };
+
+  const label = status?.charAt(0).toUpperCase() + status?.slice(1);
+
+  return (
+    <span
+      className={`text-xs px-2 py-1 rounded-full font-medium ${
+        styles[status] ?? "bg-gray-100 text-gray-500"
+      }`}
+    >
+      {label}
+    </span>
+  );
+};

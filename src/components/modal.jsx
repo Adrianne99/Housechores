@@ -1,4 +1,11 @@
-import { useState, useRef, memo, useCallback, useEffect } from "react";
+import {
+  useState,
+  useRef,
+  memo,
+  useCallback,
+  useEffect,
+  useContext,
+} from "react";
 import {
   X,
   Package,
@@ -8,10 +15,17 @@ import {
   ChevronLeft,
   Store,
   Check,
+  UserPlus,
+  Eye,
+  EyeOff,
+  UserCog,
 } from "lucide-react";
 import { Button } from "./buttons";
 import { UNITS, CATEGORIES, INITIAL_FORM } from "../constants/modal";
+import { AppContext } from "../context/app_context";
 import axios from "axios";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const STEPS = [
   { id: 1, label: "Product", icon: Package },
@@ -282,7 +296,7 @@ const Step1 = ({
   setField,
   selectedBranch,
   setSelectedBranch,
-  hideBranch = false, // ← Edit modal hides branch selector
+  hideBranch = false,
 }) => {
   const { searching, found, existingBranches } = useBarcodeSearch(
     form.barcode,
@@ -483,16 +497,30 @@ const useFormState = (initial) => {
 
 // ── Add Product Modal ──────────────────────────────────────────
 export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
+  // ⬇️ NEW: get current user to detect role
+  const { userData } = useContext(AppContext);
+  const isManager = userData?.role === "branch_manager";
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState(null);
   const { form, setForm, errors, setErrors, setField, handlePricingChange } =
     useFormState(INITIAL_FORM);
 
+  // ⬇️ NEW: auto-fill branch for managers when modal opens
+  // userData.branch is an ObjectId. We synthesize a minimal branch object
+  // so existing logic (selectedBranch._id) keeps working without refactor.
+  useEffect(() => {
+    if (open && isManager && userData?.branch) {
+      setSelectedBranch({ _id: userData.branch, name: "Your Branch" });
+    }
+  }, [open, isManager, userData?.branch]);
+
   if (!open) return null;
 
   const handleNext = () => {
-    if (step === 1 && !selectedBranch) {
+    // ⬇️ CHANGED: only validate branch when manager is NOT auto-filling
+    if (step === 1 && !isManager && !selectedBranch) {
       setErrors({ branch: "Please select a branch." });
       return;
     }
@@ -515,6 +543,9 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
     try {
       const { data } = await axios.post("/api/products/create-product", {
         ...form,
+        // ⬇️ For managers, this comes from userData.branch (set in useEffect)
+        // For admins, this comes from BranchSelector
+        // Backend will also force-overwrite this for managers as a security layer
         branch: selectedBranch._id,
         stock_management: {
           ...form.stock_management,
@@ -532,7 +563,8 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
       setForm(INITIAL_FORM);
       setErrors({});
       setStep(1);
-      setSelectedBranch(null);
+      // Don't reset branch for managers — they only have one branch
+      if (!isManager) setSelectedBranch(null);
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -546,7 +578,7 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
     setForm(INITIAL_FORM);
     setErrors({});
     setStep(1);
-    setSelectedBranch(null);
+    if (!isManager) setSelectedBranch(null);
     onClose();
   };
 
@@ -572,6 +604,8 @@ export const Add_Product_Modal = ({ open, onClose, onSuccess }) => {
           setField={setField}
           selectedBranch={selectedBranch}
           setSelectedBranch={setSelectedBranch}
+          // ⬇️ Hide branch selector for managers — they can't choose
+          hideBranch={isManager}
         />
       )}
       {step === 2 && <Step2 form={form} errors={errors} setField={setField} />}
@@ -612,14 +646,13 @@ export const Edit_Product_Modal = ({ open, onClose, onSuccess, products }) => {
   const { form, setForm, errors, setErrors, setField, handlePricingChange } =
     useFormState(products ? toForm(products) : INITIAL_FORM);
 
-  // ── Sync form whenever a different product is passed in ──────
   useEffect(() => {
     if (products) {
       setForm(toForm(products));
       setErrors({});
       setStep(1);
     }
-  }, [products?._id]); // only re-sync when the product ID changes
+  }, [products?._id]);
 
   if (!open || !products) return null;
 
@@ -641,7 +674,6 @@ export const Edit_Product_Modal = ({ open, onClose, onSuccess, products }) => {
     }
     setLoading(true);
     try {
-      // ── Fix: was `product._id`, corrected to `products._id` ──
       const { data } = await axios.put(`/api/products/${products._id}`, {
         ...form,
         stock_management: {
@@ -662,7 +694,6 @@ export const Edit_Product_Modal = ({ open, onClose, onSuccess, products }) => {
       onSuccess?.();
       onClose();
     } catch (err) {
-      // ── Picks up backend error message from inject_branch_filter or controllers
       setErrors({ submit: err.response?.data?.message || err.message });
     } finally {
       setLoading(false);
@@ -691,12 +722,10 @@ export const Edit_Product_Modal = ({ open, onClose, onSuccess, products }) => {
       errors={errors}
     >
       {step === 1 && (
-        // ── hideBranch=true: branch is already set, no need to change it on edit
         <Step1
           form={form}
           errors={errors}
           setField={setField}
-          hideBoard={true}
           hideBranch={true}
         />
       )}
@@ -837,3 +866,491 @@ const BranchSelector = memo(
     );
   },
 );
+
+export const Add_Staff_Modal = ({ open, onClose, onSuccess }) => {
+  const { userData } = useContext(AppContext);
+  const isManager = userData?.role === "branch_manager";
+
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "employee",
+    branch: "",
+    hourly_rate: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const modalRef = useRef(null);
+
+  // ─── Load branches for admin's dropdown ────────────────────
+  useEffect(() => {
+    if (!open || isManager) return;
+    axios
+      .get("/api/branches")
+      .then(({ data }) => {
+        if (data.success) setBranches(data.branches);
+      })
+      .catch(console.error);
+  }, [open, isManager]);
+
+  // ─── Auto-set manager's branch ─────────────────────────────
+  useEffect(() => {
+    if (open && isManager && userData?.branch) {
+      const branchId =
+        typeof userData.branch === "object"
+          ? userData.branch._id
+          : userData.branch;
+      setForm((prev) => ({ ...prev, branch: branchId, role: "employee" }));
+    }
+  }, [open, isManager, userData?.branch]);
+
+  // ─── Click outside to close ────────────────────────────────
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (modalRef.current && !modalRef.current.contains(e.target))
+        handleClose();
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const setField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setError(null);
+  };
+
+  const handleClose = () => {
+    setForm({
+      name: "",
+      email: "",
+      password: "",
+      role: "employee",
+      branch: "",
+      hourly_rate: "",
+    });
+    setError(null);
+    onClose();
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) return setError("Name is required.");
+    if (!form.email.trim()) return setError("Email is required.");
+    if (form.password.length < 8)
+      return setError("Password must be at least 8 characters.");
+    if (["employee", "branch_manager"].includes(form.role) && !form.branch) {
+      return setError("Branch is required for this role.");
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await axios.post("/api/staff", {
+        ...form,
+        hourly_rate: Number(form.hourly_rate) || 0,
+      });
+      if (!data.success)
+        throw new Error(data.message || "Failed to create staff.");
+      onSuccess?.(data.user);
+      handleClose();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+        onClick={handleClose}
+      />
+      <div
+        ref={modalRef}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-100 rounded-xl">
+              <UserPlus size={18} className="text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-base font-bold text-gray-900">Add Staff</p>
+              <p className="text-xs text-gray-400">
+                Create a new {isManager ? "employee" : "staff"} account
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
+          <Field label="Full Name" required>
+            <Input
+              placeholder="e.g. Maria Santos"
+              value={form.name}
+              onChange={(e) => setField("name", e.target.value)}
+              autoFocus
+            />
+          </Field>
+
+          <Field label="Email" required>
+            <Input
+              type="email"
+              placeholder="e.g. maria.santos@example.com"
+              value={form.email}
+              onChange={(e) => setField("email", e.target.value)}
+            />
+          </Field>
+
+          <Field label="Password" required>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="At least 8 characters"
+                value={form.password}
+                onChange={(e) => setField("password", e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400">
+              Tell the staff member this password — they'll use it to log in.
+            </p>
+          </Field>
+
+          {/* Role — admin only */}
+          {!isManager && (
+            <Field label="Role" required>
+              <select
+                value={form.role}
+                onChange={(e) => setField("role", e.target.value)}
+                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 bg-white"
+              >
+                <option value="employee">Employee</option>
+                <option value="branch_manager">Branch Manager</option>
+              </select>
+            </Field>
+          )}
+
+          {/* Branch — admin selects, manager auto-locked */}
+          {!isManager ? (
+            <Field label="Branch" required>
+              <select
+                value={form.branch}
+                onChange={(e) => setField("branch", e.target.value)}
+                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 bg-white"
+              >
+                <option value="">Select a branch</option>
+                {branches.map((b) => (
+                  <option key={b._id} value={b._id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : (
+            <Field label="Branch">
+              <div className="px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
+                {typeof userData.branch === "object"
+                  ? userData.branch.name
+                  : "Your assigned branch"}
+              </div>
+              <p className="text-xs text-gray-400">
+                Staff will be assigned to your branch.
+              </p>
+            </Field>
+          )}
+
+          <Field label="Hourly Rate">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                ₱
+              </span>
+              <input
+                type="number"
+                value={form.hourly_rate}
+                onChange={(e) => setField("hourly_rate", e.target.value)}
+                placeholder="0.00"
+                className="w-full pl-7 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
+              />
+            </div>
+          </Field>
+
+          {error && (
+            <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">
+              ⚠ {error}
+            </p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-100 flex gap-2">
+          <Button
+            variant="secondary"
+            size="md"
+            className="w-full"
+            onClick={handleClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? "Creating..." : "Create Account"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const Edit_Staff_Modal = ({ open, onClose, onSuccess, staff }) => {
+  const { userData } = useContext(AppContext);
+  const isAdmin = userData?.role === "admin";
+
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    role: "employee",
+    branch: "",
+    hourly_rate: "",
+  });
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const modalRef = useRef(null);
+
+  // ─── Sync form when staff prop changes ─────────────────────
+  useEffect(() => {
+    if (!staff) return;
+    setForm({
+      name: staff.name ?? "",
+      email: staff.email ?? "",
+      role: staff.role ?? "employee",
+      branch:
+        typeof staff.branch === "object"
+          ? (staff.branch?._id ?? "")
+          : (staff.branch ?? ""),
+      hourly_rate: staff.hourly_rate ?? "",
+    });
+    setError(null);
+  }, [staff?._id]);
+
+  // ─── Branches — only admin needs the dropdown ──────────────
+  useEffect(() => {
+    if (!open || !isAdmin) return;
+    axios
+      .get("/api/branches")
+      .then(({ data }) => {
+        if (data.success) setBranches(data.branches);
+      })
+      .catch(console.error);
+  }, [open, isAdmin]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (modalRef.current && !modalRef.current.contains(e.target))
+        handleClose();
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const setField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setError(null);
+  };
+
+  const handleClose = () => {
+    setError(null);
+    onClose();
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) return setError("Name is required.");
+    if (!form.email.trim()) return setError("Email is required.");
+
+    setLoading(true);
+    try {
+      const payload = {
+        name: form.name,
+        email: form.email,
+        hourly_rate: Number(form.hourly_rate) || 0,
+      };
+      // Only admin can change role/branch
+      if (isAdmin) {
+        payload.role = form.role;
+        payload.branch = form.branch;
+      }
+
+      const { data } = await axios.put(`${BACKEND_URL}/api/staff/${staff._id}`);
+      if (!data.success) throw new Error(data.message || "Failed to update.");
+      onSuccess?.(data.user);
+      handleClose();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open || !staff) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+        onClick={handleClose}
+      />
+      <div
+        ref={modalRef}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-100 rounded-xl">
+              <UserCog size={18} className="text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-base font-bold text-gray-900">Edit Staff</p>
+              <p className="text-xs text-gray-400">
+                Update {staff.name}'s details
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
+          <Field label="Full Name" required>
+            <Input
+              value={form.name}
+              onChange={(e) => setField("name", e.target.value)}
+            />
+          </Field>
+
+          <Field label="Email" required>
+            <Input
+              type="email"
+              value={form.email}
+              onChange={(e) => setField("email", e.target.value)}
+            />
+          </Field>
+
+          {/* Role + Branch — admin only */}
+          {isAdmin && (
+            <>
+              <Field label="Role">
+                <select
+                  value={form.role}
+                  onChange={(e) => setField("role", e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 bg-white"
+                >
+                  <option value="employee">Employee</option>
+                  <option value="branch_manager">Branch Manager</option>
+                </select>
+              </Field>
+
+              <Field label="Branch">
+                <select
+                  value={form.branch}
+                  onChange={(e) => setField("branch", e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 bg-white"
+                >
+                  <option value="">Select a branch</option>
+                  {branches.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </>
+          )}
+
+          {/* Manager sees read-only role/branch */}
+          {!isAdmin && (
+            <>
+              <Field label="Role">
+                <div className="px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-600 capitalize">
+                  {form.role.replace("_", " ")}
+                </div>
+              </Field>
+              <Field label="Branch">
+                <div className="px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
+                  {typeof staff.branch === "object" ? staff.branch?.name : "—"}
+                </div>
+              </Field>
+            </>
+          )}
+
+          <Field label="Hourly Rate">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                ₱
+              </span>
+              <input
+                type="number"
+                value={form.hourly_rate}
+                onChange={(e) => setField("hourly_rate", e.target.value)}
+                className="w-full pl-7 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
+              />
+            </div>
+          </Field>
+
+          {error && (
+            <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">
+              ⚠ {error}
+            </p>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-gray-100 flex gap-2">
+          <Button
+            variant="secondary"
+            size="md"
+            className="w-full"
+            onClick={handleClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};

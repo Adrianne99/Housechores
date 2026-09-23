@@ -20,76 +20,83 @@ import {
 import { cn } from "@/utils/utils";
 import Tooltip from "./tooltip";
 
+// Map role → clean URL prefix
+const ROLE_PREFIX = {
+  admin: "/admin",
+  branch_manager: "/branch_manager",
+  employee: "/employee",
+};
+
 const MENU_CONFIG = [
   {
     item: "Dashboard",
-    link: "",
+    link: "/dashboard",
     icon: LayoutDashboard,
     section: "main",
-    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
+    roles: ["admin", "branch_manager", "employee"],
   },
   {
     item: "POS Terminal",
     link: "/pos",
     icon: ShoppingCart,
     section: "main",
-    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
+    roles: ["admin", "branch_manager", "employee"],
   },
   {
     item: "Inventory",
     link: "/inventory",
     icon: Box,
     section: "main",
-    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
+    roles: ["admin", "branch_manager", "employee"],
   },
-  {
-    item: "Operation Expenses",
-    link: "/ai-analytics",
-    icon: Zap,
-    section: "main",
-    roles: ["admin"],
-  },
+  // {
+  //   item: "Operation Expenses",
+  //   link: "/ai-analytics",
+  //   icon: Zap,
+  //   section: "main",
+  //   roles: ["admin", "branch_manager"],
+  // },
   {
     item: "Messages",
     link: "/messages",
     icon: Zap,
     section: "main",
-    roles: ["admin"],
+    roles: ["admin", "branch_manager", "employee"],
   },
   {
     item: "Activities",
     link: "/activities",
     icon: Zap,
     section: "main",
-    roles: ["admin"],
+    roles: ["admin", "branch_manager"],
   },
   {
     item: "Sales Report",
     link: "/reports",
     icon: TrendingUp,
     section: "main",
-    roles: ["admin"],
+    roles: ["admin", "branch_manager"],
   },
   {
     item: "Order History",
     link: "/history",
     icon: History,
     section: "main",
-    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
+    roles: ["admin", "branch_manager", "employee"],
   },
   {
     item: "Staff Management",
     link: "/staff-management",
     icon: Users,
     section: "main",
-    roles: ["admin"], // ← admin only, stays the same
+    roles: ["admin", "branch_manager", "employee"],
   },
   {
     item: "Profile",
     link: "/profile",
     icon: User,
     section: "workspace",
-    roles: ["admin", "branch_manager", "employee"], // ← added branch_manager
+    roles: ["admin", "branch_manager", "employee"],
   },
   {
     item: "Settings",
@@ -112,9 +119,9 @@ const Sidebar = () => {
   });
 
   const role = userData?.role || "employee";
-  const prefix = `/dashboard/${role}`;
+  const prefix = ROLE_PREFIX[role] || "/employee";
 
-  // 2. Optimized Filtering Logic
+  // Profile is shared (no prefix); other links get the role prefix
   const filteredItems = useMemo(() => {
     return MENU_CONFIG.filter((item) => item.roles.includes(role)).map(
       (item) => ({

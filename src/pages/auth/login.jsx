@@ -9,7 +9,7 @@ import { Button } from "@/components/buttons";
 import { AppContext } from "@/context/app_context";
 import { cn } from "@/utils/utils";
 import logo from "@/assets/logo.png";
-import Toast from "@/components/Toast";
+import Toast from "../../components/toast";
 
 // Ensure credentials for session handling
 axios.defaults.withCredentials = true;
@@ -106,8 +106,8 @@ const Login = () => {
         <Toast
           message={toast.message}
           type={toast.type}
-          duration={5000}
-          onClose={() => setToast({ ...toast, show: true })}
+          duration={3000}
+          onClose={() => setToast({ ...toast, show: false })}
         />
       )}
 

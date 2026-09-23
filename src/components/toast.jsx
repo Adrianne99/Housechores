@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { CheckCircle, XCircle, AlertCircle, X } from "lucide-react";
 import { cn } from "@/utils/utils";
 
-const Toast = ({ message, type = "success", onClose, duration = 5000 }) => {
+const Toast = ({ message, type = "success", onClose, duration = 3000 }) => {
   const [progress, setProgress] = useState(100);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ const Toast = ({ message, type = "success", onClose, duration = 5000 }) => {
     <div
       className={cn(
         "fixed md:top-5 md:right-5 z-100 flex flex-col min-w-[300px] rounded-lg border shadow-lg overflow-hidden animate-in fade-in slide-in-from-right-5",
-        themes[type].container
+        themes[type].container,
       )}
     >
       <div className="flex items-center gap-3 p-4">

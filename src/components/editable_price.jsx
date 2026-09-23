@@ -3,17 +3,25 @@ import { Pencil, X } from "lucide-react";
 import { Button } from "./buttons";
 import axios from "axios";
 
-export const EditablePrice = ({ productId, pricing, onUpdate }) => {
+export const EditablePrice = ({ productId, pricing, field, onUpdate }) => {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(pricing);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const modalRef = useRef(null);
 
+  // ─── Field mapping ──────────────────────────────────────
+  // "cost_price"    → display pricing.cost_per_unit, allow editing
+  // "selling_price" → display pricing.selling_price, read-only (auto-calculated)
+  const isCostPrice = field === "cost_price";
+  const displayValue = isCostPrice ? form.cost_per_unit : form.selling_price;
+
+  // ─── Sync form with prop changes ────────────────────────
   useEffect(() => {
     setForm(pricing);
   }, [pricing]);
 
+  // ─── Click outside to close modal ───────────────────────
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (modalRef.current && !modalRef.current.contains(e.target)) {
@@ -26,6 +34,7 @@ export const EditablePrice = ({ productId, pricing, onUpdate }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [pricing]);
 
+  // ─── Auto-calculate selling price from cost + markup ────
   const handlePricingChange = (field, value) => {
     setForm((prev) => {
       const updated = { ...prev, [field]: value };
@@ -71,14 +80,17 @@ export const EditablePrice = ({ productId, pricing, onUpdate }) => {
     <>
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
-          ₱ {Number(form.selling_price).toFixed(2)}
+          ₱ {Number(displayValue || 0).toFixed(2)}
         </span>
-        <button
-          onClick={() => setEditing(true)}
-          className="p-1 rounded-md hover:bg-gray-100 text-gray-300 hover:text-gray-500 transition-colors"
-        >
-          <Pencil size={12} />
-        </button>
+        {/* Only show edit pencil for cost_price — selling price is auto-calculated */}
+        {isCostPrice && (
+          <button
+            onClick={() => setEditing(true)}
+            className="p-1 rounded-md hover:bg-gray-100 text-gray-300 hover:text-gray-500 transition-colors"
+          >
+            <Pencil size={12} />
+          </button>
+        )}
       </div>
 
       {editing && (

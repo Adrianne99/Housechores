@@ -1,4 +1,4 @@
-import { Suspense, lazy, useContext } from "react";
+import { useContext } from "react";
 import axios from "axios";
 import {
   createBrowserRouter,
@@ -13,27 +13,42 @@ import { AuthRoute } from "./pages/auth/routes";
 import { AppContext, AppContextProvider } from "./context/app_context";
 import { useIsMobile } from "./hooks/use_is_mobile";
 import Sidebar from "./components/sidebar";
-import { StaffManagement } from "./pages/staff_management";
 
-const Pos = lazy(() => import("./pages/pos/pos"));
-const Navigation = lazy(() => import("./components/navbar"));
-const Hero = lazy(() => import("./pages/hero"));
-const Register = lazy(() => import("./pages/auth/register"));
-const Login = lazy(() => import("./pages/auth/login"));
-const Email_verification = lazy(
-  () => import("./pages/auth/email_verification"),
-);
-const Reset_password = lazy(() => import("./pages/auth/reset_password"));
-const Dashboard = lazy(() => import("./pages/dashboard/dashboard"));
-const Inventory = lazy(() => import("./pages/dashboard/inventory"));
-const CalorieCounter = lazy(() => import("./pages/dashboard/calorie_counter"));
-const Documentation = lazy(() => import("./pages/dashboard/documentation"));
-const MobileProfile = lazy(() => import("./pages/profile/mobile_profile"));
-const DesktopProfile = lazy(() => import("./pages/profile/desktop_profile"));
-const Edit_profile = lazy(() => import("./pages/profile/edit_profile"));
-const Todo = lazy(() => import("./pages/dashboard/todo"));
-const SavingsTracker = lazy(() => import("./pages/dashboard/savings_tracker"));
+// ─── Public ──────────────────────────────────────────────────
+import Hero from "./pages/public/hero";
+import Navigation from "./components/navbar";
 
+// ─── Auth ────────────────────────────────────────────────────
+import Login from "./pages/auth/login";
+import Register from "./pages/auth/register";
+import Reset_password from "./pages/auth/reset_password";
+import Email_verification from "./pages/auth/email_verification";
+
+// ─── Admin ───────────────────────────────────────────────────
+import AdminDashboard from "./pages/admin/admin_dashboard";
+import AdminInventory from "./pages/admin/admin_inventory";
+import StaffManagement from "./pages/_shared/staff_management";
+import AdminOrderHistory from "./pages/admin/admin_history";
+// ─── Manager ─────────────────────────────────────────────────
+import ManagerDashboard from "./pages/manager/manager_dashboard";
+import ManagerInventory from "./pages/manager/manager_inventory";
+import ManagerOrderHistory from "./pages/manager/manager_history";
+
+// ─── Employee ────────────────────────────────────────────────
+import Staff_inventory from "./pages/employee/staff_inventory";
+import EmployeeOrderHistory from "./pages/employee/order_history";
+
+// ─── Shared ──────────────────────────────────────────────────
+import Pos from "./pages/_shared/pos";
+import MobileProfile from "./pages/profile/mobile_profile";
+import DesktopProfile from "./pages/profile/desktop_profile";
+import Edit_profile from "./pages/profile/edit_profile";
+
+// ─── Temp ────────────────────────────────────────────────────
+// Employee still reuses AdminDashboard until employee_dashboard.jsx is built.
+const Dashboard = AdminDashboard;
+
+// ─── Config ──────────────────────────────────────────────────
 const BACKEND_URL = "http://localhost:4000";
 
 const authLoader = async () => {
@@ -47,7 +62,7 @@ const authLoader = async () => {
   }
 };
 
-// ── Fix: added loading guard + branch_manager redirect ─────────
+// ─── Redirect ────────────────────────────────────────────────
 const DashboardRedirect = () => {
   const { userData, loading } = useContext(AppContext);
 
@@ -59,15 +74,16 @@ const DashboardRedirect = () => {
     );
 
   if (userData?.role === "admin")
-    return <Navigate to="/dashboard/admin" replace />;
+    return <Navigate to="/admin/dashboard" replace />;
   if (userData?.role === "branch_manager")
-    return <Navigate to="/dashboard/branch-manager" replace />;
+    return <Navigate to="/branch_manager/dashboard" replace />;
   if (userData?.role === "employee")
-    return <Navigate to="/dashboard/employee" replace />;
+    return <Navigate to="/employee/dashboard" replace />;
 
   return <Navigate to="/login" replace />;
 };
 
+// ─── Layouts ─────────────────────────────────────────────────
 const App_layout = () => (
   <div className="w-full h-full">
     <div className="bg-white w-full h-fit relative">
@@ -104,6 +120,7 @@ const Dashboard_layout = () => (
   </div>
 );
 
+// ─── Gates ───────────────────────────────────────────────────
 const ProfileGate = () => {
   const isMobile = useIsMobile();
   return isMobile ? <MobileProfile /> : <DesktopProfile />;
@@ -113,9 +130,7 @@ const Root = () => {
   const initialAuth = useLoaderData();
   return (
     <AppContextProvider initialAuth={initialAuth}>
-      <Suspense fallback={<div>Loading Page....</div>}>
-        <Outlet />
-      </Suspense>
+      <Outlet />
     </AppContextProvider>
   );
 };
@@ -124,6 +139,7 @@ const HydrateFallback = () => (
   <div className="h-screen flex items-center justify-center">Loading...</div>
 );
 
+// ─── Router ──────────────────────────────────────────────────
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route
@@ -132,12 +148,12 @@ const router = createBrowserRouter(
       loader={authLoader}
       HydrateFallback={HydrateFallback}
     >
-      {/* Public pages */}
+      {/* ─── Public ─── */}
       <Route element={<App_layout />}>
         <Route index element={<Hero />} />
       </Route>
 
-      {/* Unauthorized page */}
+      {/* ─── Unauthorized ─── */}
       <Route
         path="unauthorized"
         element={
@@ -157,7 +173,7 @@ const router = createBrowserRouter(
         }
       />
 
-      {/* Guest-only pages */}
+      {/* ─── Guest ─── */}
       <Route element={<AuthRoute requireAuth={false} />}>
         <Route
           path="login"
@@ -178,68 +194,65 @@ const router = createBrowserRouter(
         <Route path="reset-password" element={<Reset_password />} />
       </Route>
 
-      {/* Protected pages */}
+      {/* ─── Protected ─── */}
       <Route element={<AuthRoute requireAuth={true} />}>
         <Route path="dashboard" element={<DashboardRedirect />} />
 
-        {/* ADMIN routes */}
+        {/* ─── Admin ─── */}
         <Route
           element={<AuthRoute requireAuth={true} allowedRoles={["admin"]} />}
         >
           <Route element={<Dashboard_layout />}>
-            <Route path="dashboard/admin" element={<Dashboard />} />
-            <Route path="dashboard/admin/inventory" element={<Inventory />} />
-            <Route path="dashboard/admin/todo-app" element={<Todo />} />
-            <Route path="dashboard/admin/pos" element={<Pos />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/inventory" element={<AdminInventory />} />
             <Route
-              path="dashboard/admin/staff-management"
+              path="/admin/staff-management"
               element={<StaffManagement />}
             />
-            <Route
-              path="dashboard/admin/calorie-counter"
-              element={<CalorieCounter />}
-            />
-            <Route
-              path="dashboard/admin/savings-tracker"
-              element={<SavingsTracker />}
-            />
-            <Route
-              path="dashboard/admin/documentation"
-              element={<Documentation />}
-            />
+            <Route path="/admin/pos" element={<Pos />} />
+            <Route path="/admin/history" element={<AdminOrderHistory />} />
           </Route>
         </Route>
 
-        {/* BRANCH MANAGER routes */}
+        {/* ─── Manager ─── */}
         <Route
           element={
             <AuthRoute requireAuth={true} allowedRoles={["branch_manager"]} />
           }
         >
           <Route element={<Dashboard_layout />}>
-            <Route path="dashboard/branch_manager" element={<Dashboard />} />
             <Route
-              path="dashboard/branch-manager/inventory"
-              element={<Inventory />}
+              path="/branch_manager/dashboard"
+              element={<ManagerDashboard />}
+            />
+            <Route
+              path="/branch_manager/inventory"
+              element={<ManagerInventory />}
+            />
+            <Route path="/branch_manager/pos" element={<Pos />} />
+            <Route
+              path="/branch_manager/history"
+              element={<AdminOrderHistory />}
             />
           </Route>
         </Route>
 
-        {/* EMPLOYEE routes */}
+        {/* ─── Employee ─── */}
         <Route
           element={<AuthRoute requireAuth={true} allowedRoles={["employee"]} />}
         >
           <Route element={<Dashboard_layout />}>
-            <Route path="dashboard/employee" element={<Dashboard />} />
-            <Route path="dashboard/employee/message" element={<Todo />} />
+            <Route path="/employee/dashboard" element={<Dashboard />} />
+            <Route path="/employee/inventory" element={<Staff_inventory />} />
+            <Route path="/employee/pos" element={<Pos />} />
             <Route
-              path="dashboard/employee/inventory"
-              element={<Inventory />}
+              path="/employee/history"
+              element={<EmployeeOrderHistory />}
             />
           </Route>
         </Route>
 
-        {/* Shared protected routes */}
+        {/* ─── Shared ─── */}
         <Route element={<Dashboard_layout />}>
           <Route path="profile" element={<ProfileGate />} />
           <Route path="edit-profile" element={<Edit_profile />} />
