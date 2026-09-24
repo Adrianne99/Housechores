@@ -57,6 +57,7 @@ const StockAlerts = lazy(() => import("./pages/_shared/stock_alerts"));
 const NotificationsPage = lazy(() => import("./pages/_shared/notifications"));
 const ActivityLog = lazy(() => import("./pages/admin/activity_log"));
 const CashDrawer = lazy(() => import("./pages/_shared/cash_drawer"));
+const Receiving = lazy(() => import("./pages/_shared/receiving"));
 
 const PageLoader = () => (
   <div className="h-screen flex items-center justify-center text-sm text-gray-400">
@@ -202,6 +203,7 @@ const router = createBrowserRouter(
             <Route path="/admin/history" element={<AdminOrderHistory />} />
             <Route path="/admin/sales-report" element={<SalesReport />} />
             <Route path="/admin/cash-drawer" element={<CashDrawer />} />
+            <Route path="/admin/receiving" element={<Receiving />} />
             <Route path="/admin/activity" element={<ActivityLog />} />
             <Route path="/admin/notifications" element={<NotificationsPage />} />
           </Route>
@@ -233,6 +235,7 @@ const router = createBrowserRouter(
             />
             <Route path="/branch_manager/sales-report" element={<SalesReport />} />
             <Route path="/branch_manager/cash-drawer" element={<CashDrawer />} />
+            <Route path="/branch_manager/receiving" element={<Receiving />} />
             <Route path="/branch_manager/stock-alerts" element={<StockAlerts />} />
             <Route path="/branch_manager/time-clock" element={<TimeClock />} />
             <Route

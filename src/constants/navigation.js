@@ -11,6 +11,7 @@ import {
   Bell,
   ScrollText,
   Wallet,
+  Truck,
 } from "lucide-react";
 
 // Map role → clean URL prefix
@@ -41,6 +42,7 @@ export const MENU_CONFIG = [
   },
   { item: "Inventory", link: "/inventory", icon: Box, section: "stock", roles: ["admin", "branch_manager"] },
   { item: "Stock Alerts", link: "/stock-alerts", icon: AlertTriangle, section: "stock", roles: STAFF },
+  { item: "Receiving", link: "/receiving", icon: Truck, section: "stock", roles: ["admin", "branch_manager"] },
   {
     item: "Staff Management",
     link: "/staff-management",
