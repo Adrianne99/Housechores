@@ -1,24 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useHeldOrders, drop_held } from "../../hooks/use_held_orders";
+import { error_message } from "../../lib/query";
 import { X, Pause, Trash2, ArrowRight, Clock } from "lucide-react";
 import axios from "axios";
 
-export const HeldOrdersPanel = ({ open, onClose, onResume, refreshKey }) => {
-  const [held, setHeld] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!open) return;
-    setLoading(true);
-    setError(null);
-    axios
-      .get(`/api/held-orders`)
-      .then(({ data }) => {
-        if (data.success) setHeld(data.held_orders);
-      })
-      .catch((err) => setError(err.response?.data?.message || err.message))
-      .finally(() => setLoading(false));
-  }, [open, refreshKey]);
+export const HeldOrdersPanel = ({ open, onClose, onResume }) => {
+  // Same cached list as the POS badge — refreshed whenever a cart is held.
+  const { data: held = [], isPending: loading, error: load_error } = useHeldOrders();
+  const [actionError, setError] = useState(null);
+  const error = actionError ?? error_message(load_error);
 
   const handleResume = async (id) => {
     try {
@@ -38,7 +28,7 @@ export const HeldOrdersPanel = ({ open, onClose, onResume, refreshKey }) => {
         `/api/held-orders/${id}`,
       );
       if (!data.success) throw new Error(data.message);
-      setHeld((prev) => prev.filter((h) => h._id !== id));
+      drop_held(id);
     } catch (err) {
       setError(err.response?.data?.message || err.message);
     }

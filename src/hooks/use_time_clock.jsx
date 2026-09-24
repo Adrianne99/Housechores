@@ -1,58 +1,38 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { SHIFT_CHANGED_EVENT } from "../context/shift_context";
+import { get, queryClient, error_message } from "../lib/query";
 
-// Clock-in status, this week's hours, upcoming shifts and recent logs for
-// the signed-in staff member, plus clock in/out actions.
+// Clock-in status, this week's hours, upcoming shifts and (optionally)
+// recent logs for the signed-in staff member, all from the cache.
+export const refresh_time_clock = () => queryClient.invalidateQueries({ queryKey: ["timelog"] });
+
 export const useTimeClock = ({ withLogs = false } = {}) => {
-  const [status, setStatus] = useState(null);
-  const [shifts, setShifts] = useState([]);
-  const [today, setToday] = useState(null);
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
+  const status = useQuery({ queryKey: ["timelog", "status"], queryFn: () => get("/api/timelog/my-status") });
+  const shifts = useQuery({ queryKey: ["timelog", "shifts"], queryFn: () => get("/api/schedule/mine") });
+  const logs = useQuery({
+    queryKey: ["timelog", "logs"],
+    queryFn: () => get("/api/timelog/my-logs", { limit: 30 }),
+    enabled: withLogs,
+  });
 
-  const refresh = useCallback(
-    () =>
-      Promise.all([
-        axios.get("/api/timelog/my-status"),
-        axios.get("/api/schedule/mine"),
-        withLogs ? axios.get("/api/timelog/my-logs", { params: { limit: 30 } }) : null,
-      ])
-        .then(([s, sh, l]) => {
-          setStatus(s.data.status);
-          setShifts(sh.data.shifts ?? []);
-          setToday(sh.data.today);
-          if (l) setLogs(l.data.logs ?? []);
-          setError(null);
-        })
-        .catch((err) => setError(err.response?.data?.message || err.message))
-        .finally(() => setLoading(false)),
-    [withLogs],
-  );
+  const toggle = useMutation({
+    mutationFn: () =>
+      axios.post(`/api/timelog/${status.data?.status?.clocked_in ? "clock-out" : "clock-in"}`),
+    onSettled: refresh_time_clock,
+  });
 
-  useEffect(() => {
-    refresh();
-    // Time in/out from the login/logout prompts updates this view too.
-    window.addEventListener(SHIFT_CHANGED_EVENT, refresh);
-    return () => window.removeEventListener(SHIFT_CHANGED_EVENT, refresh);
-  }, [refresh]);
+  const today = shifts.data?.today;
+  const list = shifts.data?.shifts ?? [];
 
-  const toggle = useCallback(async () => {
-    setBusy(true);
-    try {
-      const path = status?.clocked_in ? "clock-out" : "clock-in";
-      await axios.post(`/api/timelog/${path}`);
-      await refresh();
-    } catch (err) {
-      setError(err.response?.data?.message || err.message);
-    } finally {
-      setBusy(false);
-    }
-  }, [status?.clocked_in, refresh]);
-
-  const todays_shift = shifts.find((s) => s.date === today) ?? null;
-
-  return { status, shifts, todays_shift, logs, loading, busy, error, toggle, refresh };
+  return {
+    status: status.data?.status ?? null,
+    shifts: list,
+    todays_shift: list.find((s) => s.date === today) ?? null,
+    logs: logs.data?.logs ?? [],
+    loading: status.isPending || shifts.isPending || (withLogs && logs.isPending),
+    busy: toggle.isPending,
+    error: error_message(toggle.error || status.error || shifts.error),
+    toggle: () => toggle.mutate(),
+    refresh: refresh_time_clock,
+  };
 };

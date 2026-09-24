@@ -1,5 +1,9 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import axios from "axios";
+import { get as api_get, queryClient, error_message } from "../../lib/query";
+import { useBranches } from "../../hooks/use_branches";
+import { useNow } from "../../hooks/use_now";
 import { AlertTriangle, Clock, Download, Timer, Users, Wallet } from "lucide-react";
 import Header from "../../components/header";
 import { DashboardCard } from "../../components/card";
@@ -15,6 +19,8 @@ const week_start = () => {
   d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
   return d.toISOString().slice(0, 10);
 };
+
+const NONE = []; // stable empty list for memo deps
 
 const live_hours = (l, now) =>
   l.clock_out ? l.hours_worked : Math.max(0, (now - new Date(l.clock_in)) / 3600000);
@@ -36,47 +42,30 @@ export default function Attendance() {
   const { userData } = useContext(AppContext);
   const is_admin = userData?.role === "admin";
   const [filters, setFilters] = useState({ from: week_start(), to: today_local(), branch: "", employee_id: "", status: "" });
-  const [logs, setLogs] = useState([]);
-  const [onShift, setOnShift] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [fix, setFix] = useState(null); // { log, value, error, busy }
-  const [now, setNow] = useState(() => new Date());
+  const now = useNow(60_000); // live "hours so far" for open shifts
+  const branches = useBranches({ enabled: is_admin });
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (!is_admin) return;
-    axios.get("/api/branches").then(({ data }) => setBranches(data.branches ?? [])).catch(() => {});
-  }, [is_admin]);
-
-  useEffect(() => {
-    let stale = false;
-    const params = Object.fromEntries(Object.entries(filters).filter(([, v]) => v));
-    Promise.all([
-      axios.get("/api/timelog", { params }),
-      axios.get("/api/timelog/on-shift", { params: filters.branch ? { branch: filters.branch } : {} }),
-    ])
-      .then(([a, b]) => {
-        if (stale) return;
-        setLogs(a.data.logs ?? []);
-        setOnShift(b.data.logs ?? []);
-        setError(null);
-      })
-      .catch((err) => !stale && setError(err.response?.data?.message || err.message))
-      .finally(() => !stale && setLoading(false));
-    return () => {
-      stale = true;
-    };
-  }, [filters, refreshKey]);
+  const params = useMemo(
+    () => Object.fromEntries(Object.entries(filters).filter(([, v]) => v)),
+    [filters],
+  );
+  const logs_q = useQuery({
+    queryKey: ["attendance", "logs", params],
+    queryFn: () => api_get("/api/timelog", params),
+    placeholderData: keepPreviousData,
+  });
+  const on_q = useQuery({
+    queryKey: ["attendance", "on-shift", filters.branch],
+    queryFn: () => api_get("/api/timelog/on-shift", filters.branch ? { branch: filters.branch } : undefined),
+    refetchInterval: 60_000,
+  });
+  const logs = logs_q.data?.logs ?? NONE;
+  const onShift = on_q.data?.logs ?? NONE;
+  const loading = logs_q.isPending;
+  const error = error_message(logs_q.error || on_q.error);
 
   const set = (k, v) => {
-    setLoading(true);
     setFilters((f) => ({ ...f, [k]: v }));
   };
 
@@ -140,7 +129,7 @@ export default function Attendance() {
         notes: fix.note,
       });
       setFix(null);
-      setRefreshKey((k) => k + 1);
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
     } catch (err) {
       setFix((f) => ({ ...f, busy: false, error: err.response?.data?.message || err.message }));
     }

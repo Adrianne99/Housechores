@@ -1,33 +1,8 @@
-import React, { useEffect, useState } from "react";
+
 import { CheckCircle, XCircle, AlertCircle, X } from "lucide-react";
 import { cn } from "@/utils/utils";
 
 const Toast = ({ message, type = "success", onClose, duration = 3000 }) => {
-  const [progress, setProgress] = useState(100);
-
-  useEffect(() => {
-    const step = 100 / (duration / 10); // Calculate decrement based on 10ms intervals
-
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev <= 0) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - step;
-      });
-    }, 10);
-
-    const closeTimer = setTimeout(() => {
-      onClose();
-    }, duration);
-
-    return () => {
-      clearInterval(timer);
-      clearTimeout(closeTimer);
-    };
-  }, [onClose, duration]);
-
   const themes = {
     success: {
       container: "border-green-100 bg-green-50 text-green-800",
@@ -66,9 +41,12 @@ const Toast = ({ message, type = "success", onClose, duration = 3000 }) => {
 
       {/* Timer Progress Bar */}
       <div className="h-1 w-full bg-black/5">
+        {/* The bar shrinks with a CSS animation; when it ends the toast
+            closes (no timers or effects). */}
         <div
-          className={cn("h-full transition-all linear", themes[type].bar)}
-          style={{ width: `${progress}%`, transitionDuration: "10ms" }}
+          className={cn("h-full origin-left", themes[type].bar)}
+          style={{ animation: `toast-progress ${duration}ms linear forwards` }}
+          onAnimationEnd={onClose}
         />
       </div>
     </div>

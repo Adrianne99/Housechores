@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useContext } from "react";
+import { useState, useRef, useContext } from "react";
 import { Link } from "react-router";
 import { Banknote, CreditCard, KeyRound, Smartphone, X } from "lucide-react";
 import axios from "axios";
@@ -41,10 +41,6 @@ const ChargeModalBody = ({ onClose, total, subtotal, items, discount, onSuccess 
   const approval_reason = discount_approval(discount, subtotal ?? total);
   const needs_pin = !!approval_reason && userData?.role === "employee";
 
-  useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 50);
-    return () => clearTimeout(t);
-  }, [method]);
 
   const is_cash = method === "cash";
   const tenderedNum = Number(tendered) || 0;
@@ -182,6 +178,7 @@ const ChargeModalBody = ({ onClose, total, subtotal, items, discount, onSuccess 
                   <input
                     id="tendered"
                     ref={inputRef}
+                    autoFocus
                     type="number"
                     inputMode="decimal"
                     value={tendered}
@@ -230,6 +227,7 @@ const ChargeModalBody = ({ onClose, total, subtotal, items, discount, onSuccess 
               <input
                 id="reference"
                 ref={inputRef}
+                autoFocus
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
                 placeholder={method === "gcash" ? "e.g. 1012 345 678901" : "e.g. 123456"}

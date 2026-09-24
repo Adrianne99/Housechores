@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Pencil, X } from "lucide-react";
 import { Button } from "./buttons";
 import { useEditComment } from "../hooks/use_edit_comment";
@@ -13,18 +13,14 @@ export const EditableName = ({ productId, name, brand, onUpdate }) => {
   const { comment, setComment, resetComment } = useEditComment();
   const modalRef = useRef(null);
 
-  useEffect(() => {
-    setForm({ name: name ?? "", brand: brand ?? "" });
-  }, [name, brand]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (modalRef.current && !modalRef.current.contains(e.target))
-        handleClose();
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
+  // Fill the form from the current values each time the editor opens
+  // (instead of syncing props into state with an effect).
+  const open = () => {
+    setForm({ name: name ?? "", brand: brand ?? "" });
+    setEditing(true);
+  };
 
   const handleClose = () => {
     setEditing(false);
@@ -56,7 +52,7 @@ export const EditableName = ({ productId, name, brand, onUpdate }) => {
   return (
     <>
       <button
-        onClick={() => setEditing(true)}
+        onClick={open}
         className="group flex items-center gap-0 w-fit text-left hover:gap-1.5 transition-all duration-200"
       >
         <div className="flex flex-col">

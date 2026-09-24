@@ -1,53 +1,19 @@
 import { CATEGORIES } from "../constants/modal";
 import { Pencil, Check } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 
 export const EditableCategory = ({ productId, category, onUpdate }) => {
   const [editing, setEditing] = useState(false);
-  const [selected, setSelected] = useState(category);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    setSelected(category);
-  }, [category]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target) &&
-        triggerRef.current &&
-        !triggerRef.current.contains(e.target)
-      ) {
-        setEditing(false);
-        setSelected(category);
-        setError(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [category]);
 
-  useEffect(() => {
-    if (!editing) return;
-    const updatePosition = () => {
-      if (!triggerRef.current) return;
-      const rect = triggerRef.current.getBoundingClientRect();
-      setPosition({ top: rect.bottom + 4, left: rect.left });
-    };
-    window.addEventListener("scroll", updatePosition, true);
-    window.addEventListener("resize", updatePosition);
-    return () => {
-      window.removeEventListener("scroll", updatePosition, true);
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [editing]);
 
   const handleOpen = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -66,7 +32,6 @@ export const EditableCategory = ({ productId, category, onUpdate }) => {
         },
       );
       if (!data.success) throw new Error(data.message);
-      setSelected(value);
       onUpdate(value);
       setEditing(false);
       setError(null);
@@ -87,7 +52,7 @@ export const EditableCategory = ({ productId, category, onUpdate }) => {
         {loading ? (
           <div className="w-3 h-3 border border-indigo-400 border-t-transparent rounded-full animate-spin mr-1" />
         ) : (
-          selected
+          category
         )}
         <Pencil
           size={10}
@@ -97,6 +62,17 @@ export const EditableCategory = ({ productId, category, onUpdate }) => {
 
       {editing &&
         createPortal(
+          <>
+          {/* Transparent layer: clicking or scrolling outside closes the
+              list (replaces document/window listeners). */}
+          <div
+            className="fixed inset-0 z-9998"
+            onMouseDown={() => {
+              setEditing(false);
+              setError(null);
+            }}
+            onWheel={() => setEditing(false)}
+          />
           <div
             ref={dropdownRef}
             style={{ top: position.top, left: position.left }}
@@ -113,13 +89,13 @@ export const EditableCategory = ({ productId, category, onUpdate }) => {
                   key={cat}
                   onClick={() => handleSave(cat)}
                   className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${
-                    selected === cat
+                    category === cat
                       ? "text-indigo-600 font-medium bg-indigo-50"
                       : "text-gray-700"
                   }`}
                 >
                   {cat}
-                  {selected === cat && (
+                  {category === cat && (
                     <Check size={13} className="text-indigo-500" />
                   )}
                 </button>
@@ -130,7 +106,8 @@ export const EditableCategory = ({ productId, category, onUpdate }) => {
                 <p className="text-xs text-red-500">⚠ {error}</p>
               </div>
             )}
-          </div>,
+          </div>
+          </>,
           document.body,
         )}
     </>

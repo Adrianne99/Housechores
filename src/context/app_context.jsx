@@ -1,52 +1,48 @@
-import { createContext, useCallback, useEffect, useState } from "react";
+import { createContext, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { AUTH_EXPIRED_EVENT } from "../lib/api";
+import { queryClient } from "../lib/query";
 
 export const AppContext = createContext();
 
+// The signed-in user comes from the ["me"] query (no mount effect).
+// null = signed out.
+const fetch_me = async () => {
+  try {
+    const { data } = await axios.get("/api/user/data");
+    return data.success ? data.userData : null;
+  } catch {
+    return null;
+  }
+};
+
 export const AppContextProvider = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const me = useQuery({
+    queryKey: ["me"],
+    queryFn: fetch_me,
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-  const getUserData = useCallback(async () => {
-    try {
-      const { data } = await axios.get("/api/user/data");
+  const userData = me.data ?? null;
 
-      if (data.success) {
-        setIsLoggedIn(true);
-        setUserData(data.userData);
-      } else {
-        setIsLoggedIn(false);
-        setUserData(null);
-      }
-    } catch {
-      setIsLoggedIn(false);
-      setUserData(null);
-    } finally {
-      setLoading(false);
-    }
+  const setUserData = useCallback((value) => {
+    queryClient.setQueryData(["me"], value ?? null);
   }, []);
 
-  useEffect(() => {
-    getUserData();
-  }, [getUserData]);
-
-  // Any API call that comes back 401 (expired token, deactivated account)
-  // logs the user out so AuthRoute sends them to /login.
-  useEffect(() => {
-    const on_expired = () => {
-      setIsLoggedIn(false);
-      setUserData(null);
-    };
-    window.addEventListener(AUTH_EXPIRED_EVENT, on_expired);
-    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, on_expired);
+  // Kept for existing callers: logging in always also calls setUserData,
+  // so only "false" (sign out) needs to do anything here.
+  const setIsLoggedIn = useCallback((value) => {
+    if (!value) queryClient.setQueryData(["me"], null);
   }, []);
+
+  const getUserData = useCallback(() => me.refetch(), [me]);
 
   const value = {
-    isLoggedIn,
+    isLoggedIn: !!userData,
     userData,
-    loading,
+    loading: me.isPending,
     setIsLoggedIn,
     setUserData,
     getUserData,

@@ -19,9 +19,9 @@ export const CartPanel = ({
   heldCount = 0,
 }) => {
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-gray-100">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-100">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-100">
+      <div className="shrink-0 px-6 py-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-gray-900">
             Cart ({totals.item_count})
@@ -53,7 +53,7 @@ export const CartPanel = ({
       </div>
 
       {/* Items */}
-      <div className="flex-1 overflow-y-auto px-3 py-2">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <p className="text-sm text-gray-400">No items yet</p>
@@ -159,7 +159,7 @@ export const CartPanel = ({
       </div>
 
       {/* Totals + actions */}
-      <div className="px-6 py-4 border-t border-gray-100 space-y-3">
+      <div className="shrink-0 px-6 py-4 border-t border-gray-100 space-y-3">
         {/* Discount inline */}
         {!isEmpty && (
           <DiscountSection

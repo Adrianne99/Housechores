@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { useMemo, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { get, error_message } from "../../lib/query";
+import { useBranches } from "../../hooks/use_branches";
 import {
   Boxes,
   CalendarClock,
@@ -60,62 +62,30 @@ const PAGE = 50;
 
 export default function ActivityLog() {
   const [filters, setFilters] = useState({ branch: "", role: "", category: "", from: "", to: "" });
-  const [logs, setLogs] = useState([]);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(null);
-  const [branches, setBranches] = useState([]);
-
-  useEffect(() => {
-    axios
-      .get("/api/branches")
-      .then(({ data }) => setBranches(data.branches ?? []))
-      .catch(() => {});
-  }, []);
+  const branches = useBranches();
 
   const params = useMemo(
     () => Object.fromEntries(Object.entries(filters).filter(([, v]) => v)),
     [filters],
   );
 
-  useEffect(() => {
-    let stale = false;
-    axios
-      .get("/api/activity", { params: { ...params, limit: PAGE } })
-      .then(({ data }) => {
-        if (stale) return;
-        setLogs(data.logs);
-        setHasMore(data.has_more);
-        setError(null);
-      })
-      .catch((err) => !stale && setError(err.response?.data?.message || err.message))
-      .finally(() => !stale && setLoading(false));
-    return () => {
-      stale = true;
-    };
-  }, [params]);
+  // Pages of 50; "Load older activity" fetches the next page.
+  const q = useInfiniteQuery({
+    queryKey: ["activity", params],
+    queryFn: ({ pageParam }) =>
+      get("/api/activity", { ...params, limit: PAGE, ...(pageParam && { before: pageParam }) }),
+    initialPageParam: null,
+    getNextPageParam: (last) =>
+      last.has_more && last.logs.length ? last.logs[last.logs.length - 1].createdAt : undefined,
+  });
+  const logs = useMemo(() => q.data?.pages.flatMap((p) => p.logs) ?? [], [q.data]);
+  const hasMore = !!q.hasNextPage;
+  const loading = q.isPending;
+  const loadingMore = q.isFetchingNextPage;
+  const error = error_message(q.error);
+  const loadMore = () => q.fetchNextPage();
 
-  const set = (key, value) => {
-    setLoading(true);
-    setFilters((f) => ({ ...f, [key]: value }));
-  };
-
-  const loadMore = useCallback(async () => {
-    if (!logs.length) return;
-    setLoadingMore(true);
-    try {
-      const { data } = await axios.get("/api/activity", {
-        params: { ...params, limit: PAGE, before: logs[logs.length - 1].createdAt },
-      });
-      setLogs((prev) => [...prev, ...data.logs]);
-      setHasMore(data.has_more);
-    } catch (err) {
-      setError(err.response?.data?.message || err.message);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [logs, params]);
+  const set = (key, value) => setFilters((f) => ({ ...f, [key]: value }));
 
   // Group rows by calendar day for the timeline.
   const groups = useMemo(() => {
@@ -167,10 +137,7 @@ export default function ActivityLog() {
           {Object.values(filters).some(Boolean) && (
             <button
               type="button"
-              onClick={() => {
-                setLoading(true);
-                setFilters({ branch: "", role: "", category: "", from: "", to: "" });
-              }}
+              onClick={() => setFilters({ branch: "", role: "", category: "", from: "", to: "" })}
               className="text-xs font-medium text-indigo-600 hover:underline pb-2.5"
             >
               Clear filters

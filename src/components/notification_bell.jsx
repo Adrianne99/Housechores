@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   AlertTriangle,
@@ -64,17 +64,6 @@ export const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const on_click = (e) => ref.current && !ref.current.contains(e.target) && setOpen(false);
-    const on_key = (e) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", on_click);
-    document.addEventListener("keydown", on_key);
-    return () => {
-      document.removeEventListener("mousedown", on_click);
-      document.removeEventListener("keydown", on_key);
-    };
-  }, [open]);
 
   if (!ctx) return null;
   const { notifications, unread, markRead, markAllRead } = ctx;
@@ -87,7 +76,11 @@ export const NotificationBell = () => {
   };
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={ref} onKeyDown={(e) => e.key === "Escape" && setOpen(false)}>
+      {open && (
+        // Transparent layer: clicking anywhere else closes the dropdown.
+        <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+      )}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

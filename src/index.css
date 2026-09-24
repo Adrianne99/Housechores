@@ -275,3 +275,14 @@ input[type="number"] {
     transparent 100%
   );
 }
+
+/* Toast countdown bar (components/toast.jsx) */
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* Lock page scroll while the mobile menu drawer is open (navbar.jsx) */
+body:has([data-scroll-lock]) {
+  overflow: hidden;
+}

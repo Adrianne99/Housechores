@@ -1,4 +1,5 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
+import { useBranches } from "../../hooks/use_branches";
 import { UserPlus } from "lucide-react";
 import axios from "axios";
 
@@ -24,38 +25,25 @@ const EMPTY_FORM = {
   hourly_rate: "",
 };
 
-export const Add_Staff_Modal = ({ open, onClose, onSuccess }) => {
+// Mounted only while open: every opening starts with a fresh form.
+export const AddStaffModal = (props) =>
+  props.open ? <AddStaffBody {...props} /> : null;
+
+const AddStaffBody = ({ open, onClose, onSuccess }) => {
   const { userData } = useContext(AppContext);
   const isManager = userData?.role === "branch_manager";
 
+  // Managers can only add cashiers to their own branch — preset it.
+  const manager_branch =
+    typeof userData?.branch === "object" ? userData?.branch?._id : userData?.branch;
+  const [initial] = useState(() =>
+    isManager ? { ...EMPTY_FORM, role: "employee", branch: manager_branch ?? "" } : EMPTY_FORM,
+  );
   const { form, setField, error, setError, loading, setLoading, reset } =
-    useForm(EMPTY_FORM);
+    useForm(initial);
 
   const [showPassword, setShowPassword] = useState(false);
-  const [branches, setBranches] = useState([]);
-
-  // Load branches (admin only)
-  useEffect(() => {
-    if (!open || isManager) return;
-    axios
-      .get(`/api/branches`)
-      .then(({ data }) => {
-        if (data.success) setBranches(data.branches);
-      })
-      .catch(console.error);
-  }, [open, isManager]);
-
-  // Auto-lock manager's branch
-  useEffect(() => {
-    if (open && isManager && userData?.branch) {
-      const branchId =
-        typeof userData.branch === "object"
-          ? userData.branch._id
-          : userData.branch;
-      setField("branch", branchId);
-      setField("role", "employee");
-    }
-  }, [open, isManager, userData?.branch]);
+  const branches = useBranches({ enabled: !isManager });
 
   const handleClose = () => {
     reset();

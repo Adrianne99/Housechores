@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef, useContext } from "react";
+import { useState, useContext } from "react";
+import { useBranches } from "../hooks/use_branches";
+import { queryClient } from "../lib/query";
 import { Store, Plus, Trash2, X, Check } from "lucide-react";
 import { Button } from "./buttons";
 import { AppContext } from "../context/app_context"; // ← import your context
@@ -9,38 +11,19 @@ export const BranchDropdown = ({ onBranchSelect }) => {
   const can_edit_all = ["admin"].includes(userData?.role);
 
   const [open, setOpen] = useState(false);
-  const [branches, setBranches] = useState([]);
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", address: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
-        setAdding(false);
-        setError(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (open) fetch_branches();
-  }, [open]);
-
-  const fetch_branches = async () => {
-    try {
-      const { data } = await axios.get("/api/branches");
-      if (data.success) setBranches(data.branches);
-    } catch (err) {
-      console.error(err);
-    }
+  const branches = useBranches({ enabled: open });
+  const close = () => {
+    setOpen(false);
+    setAdding(false);
+    setError(null);
   };
+
+  const reload_branches = () => queryClient.invalidateQueries({ queryKey: ["branches"] });
 
   const handleAdd = async () => {
     if (!form.name.trim()) {
@@ -51,7 +34,7 @@ export const BranchDropdown = ({ onBranchSelect }) => {
     try {
       const { data } = await axios.post("/api/branches", form);
       if (!data.success) throw new Error(data.message);
-      setBranches((prev) => [...prev, data.branch]);
+      reload_branches();
       setForm({ name: "", address: "" });
       setAdding(false);
       setError(null);
@@ -67,7 +50,7 @@ export const BranchDropdown = ({ onBranchSelect }) => {
     try {
       const { data } = await axios.delete(`/api/branches/${id}`);
       if (!data.success) throw new Error(data.message);
-      setBranches((prev) => prev.filter((b) => b._id !== id));
+      reload_branches();
       if (selected?._id === id) {
         setSelected(null);
         onBranchSelect?.(null);
@@ -90,7 +73,11 @@ export const BranchDropdown = ({ onBranchSelect }) => {
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
+      {open && (
+        // Transparent layer closes the menu on outside click.
+        <div className="fixed inset-0 z-[19]" onClick={close} />
+      )}
       <Button
         variant="secondary"
         size="md"

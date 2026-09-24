@@ -1,27 +1,49 @@
-import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { get, queryClient } from "../lib/query";
+
+// Products for the user's branch (admins: ?branch_id), cached under
+// ["products", branch_id]. Shared by the POS, Stock Alerts and dashboards.
+export const products_key = (branch_id) => ["products", branch_id ?? "mine"];
+
+export const useProducts = (branch_id, options = {}) =>
+  useQuery({
+    queryKey: products_key(branch_id),
+    queryFn: () => get("/api/products", branch_id ? { branch_id } : undefined),
+    select: (data) => data.products ?? [],
+    ...options,
+  });
+
+// After a sale, lower the cached stock by what was sold — the POS
+// updates instantly without re-downloading the whole product list.
+export const apply_sale_to_products = (order) => {
+  const sold = new Map();
+  for (const item of order.items ?? []) {
+    if (item.inventory) sold.set(String(item.inventory), (sold.get(String(item.inventory)) ?? 0) + item.quantity);
+  }
+  if (sold.size === 0) return;
+  queryClient.setQueriesData({ queryKey: ["products"] }, (data) =>
+    data?.products
+      ? {
+          ...data,
+          products: data.products.map((p) =>
+            sold.has(String(p._id))
+              ? {
+                  ...p,
+                  stock_management: {
+                    ...p.stock_management,
+                    current_stock: Math.max(0, p.stock_management.current_stock - sold.get(String(p._id))),
+                  },
+                }
+              : p,
+          ),
+        }
+      : data,
+  );
+};
 
 export const useProductLookup = () => {
-  const [allProducts, setAllProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetches all products for the cashier's branch. `loading` is only true
-  // for the first load, so refreshing after a sale doesn't blank the POS.
-  const refresh = useCallback(
-    () =>
-      axios
-        .get(`/api/products`)
-        .then(({ data }) => {
-          if (data.success) setAllProducts(data.products);
-        })
-        .catch(console.error)
-        .finally(() => setLoading(false)),
-    [],
-  );
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const { data: allProducts = [], isPending: loading, refetch } = useProducts();
 
   // Find by barcode (exact match)
   const findByBarcode = useCallback(
@@ -49,5 +71,5 @@ export const useProductLookup = () => {
     [allProducts],
   );
 
-  return { allProducts, findByBarcode, search, loading, refresh };
+  return { allProducts, findByBarcode, search, loading, refresh: refetch };
 };

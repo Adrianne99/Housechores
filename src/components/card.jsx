@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useProducts } from "../hooks/use_product_lookup";
+import { queryClient } from "../lib/query";
 import {
   ArrowDownRight,
   ArrowLeftRight,
@@ -250,19 +252,19 @@ const DEFAULT_PERMISSIONS = {
   },
 };
 
+// Products come from the shared ["products", branch] cache (same data
+// the parent uses for its stat cards). Row selection is controlled by the
+// parent. Remount with key={branch} to reset expanded rows.
+const NO_ROWS = [];
+
 export const StocksCard = ({
   filter,
-  refresh,
-  onProductsLoaded,
-  onCheckedChange,
-  onProductsChange,
+  selected = NO_ROWS,
+  onSelectedChange = () => {},
   branch_id,
   permissions = DEFAULT_PERMISSIONS,
 }) => {
-  const [products, setProducts] = useState([]);
-  const [quantities, setQuantities] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState([]);
+  const { data: products = NO_ROWS, isPending: loading } = useProducts(branch_id);
   const [expanded, setExpanded] = useState({});
 
   const p = permissions;
@@ -284,55 +286,23 @@ export const StocksCard = ({
     ...(p.show_actions ? ["Actions"] : []),
   ];
 
-  const fetch_products = async () => {
-    setLoading(true);
-    try {
-      const url = branch_id
-        ? `/api/products?branch_id=${branch_id}`
-        : "/api/products";
-      const { data } = await axios.get(url);
-      setProducts(data.products);
-      onProductsLoaded?.(data.products);
-      const initial = {};
-      data.products.forEach((prod) => {
-        initial[prod._id] = prod.stock_management.current_stock;
-      });
-      setQuantities(initial);
-    } catch (error) {
-      console.error("fetch_products error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetch_products();
-  }, [refresh, branch_id]);
-  useEffect(() => {
-    onCheckedChange?.(selected);
-  }, [selected]);
-  useEffect(() => {
-    onProductsChange?.(products);
-  }, [products]);
-  useEffect(() => {
-    setExpanded({});
-  }, [branch_id]);
-
   const toggleSelect = (id) =>
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    onSelectedChange(
+      selected.includes(id) ? selected.filter((i) => i !== id) : [...selected, id],
     );
   const toggleAll = () =>
-    setSelected(
-      selected.length === products.length
-        ? []
-        : products.map((prod) => prod._id),
+    onSelectedChange(
+      selected.length === products.length ? [] : products.map((prod) => prod._id),
     );
   const toggleExpand = (key) =>
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  // Inline edits update every cached copy of the product (all branches
+  // views, POS) instead of re-fetching.
   const updateProduct = (id, changes) =>
-    setProducts((prev) =>
-      prev.map((prod) => (prod._id === id ? { ...prod, ...changes } : prod)),
+    queryClient.setQueriesData({ queryKey: ["products"] }, (d) =>
+      d?.products
+        ? { ...d, products: d.products.map((prod) => (prod._id === id ? { ...prod, ...changes } : prod)) }
+        : d,
     );
 
   const handleDelete = async (id) => {
@@ -341,7 +311,8 @@ export const StocksCard = ({
     try {
       const { data } = await axios.delete(`/api/products/${id}`);
       if (!data.success) throw new Error(data.message);
-      await fetch_products();
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      onSelectedChange(selected.filter((s) => s !== id));
     } catch (err) {
       console.error("Delete failed:", err.message);
     }
@@ -425,7 +396,7 @@ export const StocksCard = ({
       <td className="px-4 py-3">
         <StockBadge
           current={
-            quantities[product._id] ?? product.stock_management.current_stock
+            product.stock_management.current_stock
           }
           reorder={product.stock_management.reorder_level}
         />
@@ -436,10 +407,6 @@ export const StocksCard = ({
             productId={product._id}
             stock_management={product.stock_management}
             onUpdate={(updated) => {
-              setQuantities((prev) => ({
-                ...prev,
-                [product._id]: Number(updated.current_stock),
-              }));
               updateProduct(product._id, {
                 stock_management: {
                   ...product.stock_management,
@@ -530,7 +497,7 @@ export const StocksCard = ({
     const isExpanded = expanded[key];
     const totalStock = group.branches.reduce(
       (sum, branch) =>
-        sum + (quantities[branch._id] ?? branch.stock_management.current_stock),
+        sum + (branch.stock_management.current_stock),
       0,
     );
     const lowestReorder = Math.max(
@@ -652,7 +619,7 @@ export const StocksCard = ({
         {isExpanded &&
           group.branches.map((b) => {
             const branchStock =
-              quantities[b._id] ?? b.stock_management.current_stock;
+              b.stock_management.current_stock;
             return (
               <tr
                 key={b._id}

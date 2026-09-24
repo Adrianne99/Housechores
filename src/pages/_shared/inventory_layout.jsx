@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { useProducts } from "../../hooks/use_product_lookup";
+import { queryClient } from "../../lib/query";
 import { Funnel, Plus, Download, X, Trash2 } from "lucide-react";
 import axios from "axios";
 
@@ -8,7 +10,7 @@ import { Button } from "../../components/buttons";
 import { BranchDropdown } from "../../components/dropdown";
 import { BranchLabel } from "../../components/branch_label";
 import { H4 } from "../../components/texts";
-import { AddProductModal, EditProductModal } from "../../components/modal";
+import { AddProductModal } from "../../components/modal";
 import { FILTER_OPTIONS } from "../../constants/inventory";
 import { useExportCSV } from "../../hooks/use_export";
 import { useThrottle } from "../../hooks/use_throttle";
@@ -130,14 +132,13 @@ const InventoryLayout = ({ permissions = DEFAULTS }) => {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [modal, setModal] = useState(false);
-  const [editModal, setEditModal] = useState(false);
-  const [editProduct, setEditProduct] = useState(null);
   const [deleteAll, setDeleteAll] = useState(false);
-  const [refresh, setRefresh] = useState(0);
   const [checkedRows, setCheckedRows] = useState([]);
-  const [products, setProducts] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
-  const dropdownRef = useRef(null);
+  const branch_id = p.can_switch_branch ? (selectedBranch?._id ?? null) : null;
+  // Same cached list the table shows — stat cards stay in sync.
+  const { data: products = [] } = useProducts(branch_id);
+  const reload_products = () => queryClient.invalidateQueries({ queryKey: ["products"] });
 
   // ─── Compute stats from the cards list ─────────────────────
   // Only builds the cards this role asked for.
@@ -154,15 +155,6 @@ const InventoryLayout = ({ permissions = DEFAULTS }) => {
       .filter(Boolean);
   }, [products, p.cards]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleDeleteAll = async () => {
     try {
       const { data } = await axios.delete("/api/products/bulk", {
@@ -171,7 +163,7 @@ const InventoryLayout = ({ permissions = DEFAULTS }) => {
       if (!data.success) throw new Error(data.message);
       setDeleteAll(false);
       setCheckedRows([]);
-      setRefresh((prev) => prev + 1);
+      reload_products();
     } catch (error) {
       console.error("Delete all failed:", error.message);
     }
@@ -227,13 +219,16 @@ const InventoryLayout = ({ permissions = DEFAULTS }) => {
 
             {p.can_switch_branch ? (
               <BranchDropdown
-                onBranchSelect={(branch) => setSelectedBranch(branch)}
+                onBranchSelect={(branch) => {
+                  setSelectedBranch(branch);
+                  setCheckedRows([]); // never act on rows you can no longer see
+                }}
               />
             ) : (
               <BranchLabel />
             )}
 
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative">
               <Button
                 variant="secondary"
                 size="md"
@@ -260,6 +255,10 @@ const InventoryLayout = ({ permissions = DEFAULTS }) => {
                   </>
                 )}
               </Button>
+              {open && (
+                // Transparent layer closes the menu on outside click.
+                <div className="fixed inset-0 z-[9]" onClick={() => setOpen(false)} />
+              )}
               {open && (
                 <div className="absolute top-full right-0 mt-1 w-52 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden">
                   {FILTER_OPTIONS.map(({ label, value, Icon }) => (
@@ -301,19 +300,7 @@ const InventoryLayout = ({ permissions = DEFAULTS }) => {
           <AddProductModal
             open={modal}
             onClose={() => setModal(false)}
-            onSuccess={() => setRefresh((prev) => prev + 1)}
-          />
-        )}
-
-        {p.can_add_product && (
-          <EditProductModal
-            open={editModal}
-            products={editProduct}
-            onClose={() => {
-              setEditModal(false);
-              setEditProduct(null);
-            }}
-            onSuccess={() => setRefresh((prev) => prev + 1)}
+            onSuccess={reload_products}
           />
         )}
 
@@ -363,15 +350,12 @@ const InventoryLayout = ({ permissions = DEFAULTS }) => {
 
         <div className="col-span-4">
           <StocksCard
+            key={branch_id ?? "all"}
             filter={selected?.value}
-            refresh={refresh}
-            branch_id={
-              p.can_switch_branch ? (selectedBranch?._id ?? null) : null
-            }
+            branch_id={branch_id}
             permissions={p}
-            onProductsChange={setProducts}
-            onProductsLoaded={setProducts}
-            onCheckedChange={setCheckedRows}
+            selected={checkedRows}
+            onSelectedChange={setCheckedRows}
           />
         </div>
       </div>

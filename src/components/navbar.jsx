@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useMemo } from "react";
+import { useState, useContext, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import axios from "axios";
 import { Menu, X, Home } from "lucide-react";
@@ -99,12 +99,6 @@ const Navigation = ({ dashboard = false }) => {
     }, {});
   }, [nav_dashboard_items, userData?.role]);
 
-  useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
 
   return (
     <nav className="relative z-50 w-full font-inter">
@@ -179,6 +173,7 @@ const Navigation = ({ dashboard = false }) => {
 
       {/* 🔹 MOBILE DRAWER MENU */}
       <div
+        data-scroll-lock={open || undefined}
         className={cn(
           "fixed inset-0 z-40 md:hidden transition-all duration-300",
           open ? "visible" : "invisible",

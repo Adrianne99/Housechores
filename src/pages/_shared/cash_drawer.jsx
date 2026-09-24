@@ -1,5 +1,7 @@
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { get, queryClient, error_message } from "../../lib/query";
 import { ArrowDownCircle, ArrowUpCircle, Banknote, Lock, Unlock, Wallet } from "lucide-react";
 import Header from "../../components/header";
 import { DashboardCard } from "../../components/card";
@@ -174,21 +176,12 @@ const CloseDrawer = ({ expected, onClose, onCancel }) => {
 };
 
 // ─── History (Z-readings) ────────────────────────────────────
-const useDrawerHistory = (refreshKey) => {
-  const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    let stale = false;
-    axios
-      .get("/api/drawer", { params: { limit: 50 } })
-      .then(({ data }) => !stale && setSessions(data.sessions ?? []))
-      .catch(() => {})
-      .finally(() => !stale && setLoading(false));
-    return () => {
-      stale = true;
-    };
-  }, [refreshKey]);
-  return { sessions, loading };
+const useDrawerHistory = () => {
+  const q = useQuery({
+    queryKey: ["drawer", "list"],
+    queryFn: () => get("/api/drawer", { limit: 50 }),
+  });
+  return { sessions: q.data?.sessions ?? [], loading: q.isPending };
 };
 
 export default function CashDrawer() {
@@ -198,11 +191,10 @@ export default function CashDrawer() {
   const drawer = useDrawer();
   const [closing, setClosing] = useState(false);
   const [report, setReport] = useState(null); // session id to show
-  const [historyKey, setHistoryKey] = useState(0);
-  const { sessions, loading: history_loading } = useDrawerHistory(historyKey);
+  const { sessions, loading: history_loading } = useDrawerHistory();
   const [forceClose, setForceClose] = useState(null); // { id, amount, error }
 
-  const bump = useCallback(() => setHistoryKey((k) => k + 1), []);
+  const bump = () => queryClient.invalidateQueries({ queryKey: ["drawer"] });
 
   const handleClose = async (payload) => {
     const r = await drawer.close(payload);
@@ -224,7 +216,7 @@ export default function CashDrawer() {
       setForceClose(null);
       bump();
     } catch (err) {
-      setForceClose((f) => ({ ...f, error: err.response?.data?.message || err.message }));
+      setForceClose((f) => ({ ...f, error: error_message(err) }));
     }
   };
 

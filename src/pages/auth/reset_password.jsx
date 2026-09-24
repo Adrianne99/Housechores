@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router";
 import { H2, Paragraph } from "@/components/texts";
@@ -10,20 +10,36 @@ import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { cn } from "@/utils/utils";
 import logo from "@/assets/logo.png";
 import { Countdown } from "@/components/timer";
+import { useNow } from "@/hooks/use_now";
+
+// Resume a reset in progress (read once, as initial state).
+const saved = (key) => {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+const OTP_WAIT_MS = 300000;
 
 const Reset_password = () => {
   axios.defaults.withCredentials = true;
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => saved("reset_email") ?? "");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [isEmailSent, setIsEmailSent] = useState(false);
-  const [isOtpSubmitted, setIsOtpSubmitted] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [isTimerActive, setIsTimerActive] = useState(true);
-  const [lastSentTime, setLastSentTime] = useState(0);
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [isEmailSent, setIsEmailSent] = useState(() =>
+    ["otp", "password"].includes(saved("reset_step")),
+  );
+  const [isOtpSubmitted, setIsOtpSubmitted] = useState(() => saved("reset_step") === "password");
+  const [otp, setOtp] = useState(() => saved("reset_otp") ?? "");
+  const [timerEnd, setTimerEnd] = useState(
+    () => Number(saved("otp_expiry_time")) || Date.now() + OTP_WAIT_MS,
+  );
+  const [lastSentTime, setLastSentTime] = useState(() => parseInt(saved("last_otp_time")) || 0);
+  const currentTime = useNow(1000).getTime();
+  const isTimerActive = currentTime < timerEnd;
   const COOLDOWN_TIME = 60000;
 
   const [uiState, setUiState] = useState({
@@ -44,28 +60,6 @@ const Reset_password = () => {
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
   };
-
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const step = sessionStorage.getItem("reset_step");
-    const savedEmail = sessionStorage.getItem("reset_email");
-    const savedOtp = sessionStorage.getItem("reset_otp");
-    const savedTime = sessionStorage.getItem("last_otp_time");
-
-    if (savedEmail) setEmail(savedEmail);
-    if (savedOtp) setOtp(savedOtp);
-    if (savedTime) setLastSentTime(parseInt(savedTime));
-
-    if (step === "otp") setIsEmailSent(true);
-    if (step === "password") {
-      setIsEmailSent(true);
-      setIsOtpSubmitted(true);
-    }
-  }, []);
 
   const handleRateLimit = () => {
     const timePassed = Date.now() - lastSentTime;
@@ -151,7 +145,7 @@ const Reset_password = () => {
       setLastSentTime(now);
       sessionStorage.setItem("last_otp_time", now.toString());
 
-      setIsTimerActive(true);
+      setTimerEnd(endTime);
       showToast("OTP Resent!");
     } catch (err) {
       showToast(err.response?.data?.message || "Failed to resend", "error");
@@ -296,7 +290,7 @@ const Reset_password = () => {
                     onClick={resendOtp}
                   >
                     {isTimerActive ? "Resend in " : "Resend code"}
-                    <Countdown onComplete={() => setIsTimerActive(false)} />
+                    <Countdown until={timerEnd} />
                   </span>
                 </div>
                 <Button

@@ -1,5 +1,5 @@
-import { useContext, useEffect, useState } from "react";
-import axios from "axios";
+import { useContext, useState } from "react";
+import { useBranches } from "../hooks/use_branches";
 import { Eye, ChevronLeft, ChevronRight, Filter, X, Store } from "lucide-react";
 
 import Header from "../components/header";
@@ -28,18 +28,7 @@ export const OrderHistoryTable = ({ title = "Order History" }) => {
 
   const [detailOrder, setDetailOrder] = useState(null);
   const [voidOrder, setVoidOrder] = useState(null);
-  const [branches, setBranches] = useState([]);
-
-  // Load branches for the filter dropdown (admins only).
-  useEffect(() => {
-    if (!canViewAllBranches) return;
-    axios
-      .get("/api/branches")
-      .then(({ data }) => {
-        if (data.success) setBranches(data.branches);
-      })
-      .catch(() => {});
-  }, [canViewAllBranches]);
+  const branches = useBranches({ enabled: canViewAllBranches });
 
   const currentPage = Math.floor(filters.skip / filters.limit) + 1;
   const totalPages = Math.max(1, Math.ceil(total / filters.limit));

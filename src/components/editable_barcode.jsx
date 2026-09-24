@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { Pencil, X } from "lucide-react";
 import { Button } from "./buttons";
 import { useEditComment } from "../hooks/use_edit_comment";
@@ -13,18 +13,14 @@ export const EditableBarcode = ({ productId, barcode, onUpdate }) => {
   const { comment, setComment, resetComment } = useEditComment();
   const modalRef = useRef(null);
 
-  useEffect(() => {
-    setValue(barcode ?? "");
-  }, [barcode]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (modalRef.current && !modalRef.current.contains(e.target))
-        handleClose();
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
+  // Fill the form from the current values each time the editor opens
+  // (instead of syncing props into state with an effect).
+  const open = () => {
+    setValue(barcode ?? "");
+    setEditing(true);
+  };
 
   const handleClose = () => {
     setEditing(false);
@@ -55,7 +51,7 @@ export const EditableBarcode = ({ productId, barcode, onUpdate }) => {
   return (
     <>
       <button
-        onClick={() => setEditing(true)}
+        onClick={open}
         className="group flex items-center gap-0 w-fit font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 hover:gap-1.5 hover:pr-2"
       >
         {value}

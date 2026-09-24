@@ -1,4 +1,5 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
+import { useBranches } from "../../hooks/use_branches";
 import { UserCog } from "lucide-react";
 import axios from "axios";
 
@@ -22,41 +23,28 @@ const EMPTY_FORM = {
   hourly_rate: "",
 };
 
-export const Edit_Staff_Modal = ({ open, onClose, onSuccess, staff }) => {
+const form_from = (staff) => ({
+  name: staff.name ?? "",
+  email: staff.email ?? "",
+  role: staff.role ?? "employee",
+  branch:
+    typeof staff.branch === "object" ? (staff.branch?._id ?? "") : (staff.branch ?? ""),
+  hourly_rate: staff.hourly_rate ?? "",
+});
+
+// Mounted only while open, starting from the chosen staff member —
+// cancelled edits don't come back next time.
+export const EditStaffModal = (props) =>
+  props.open && props.staff ? <EditStaffBody {...props} /> : null;
+
+const EditStaffBody = ({ open, onClose, onSuccess, staff }) => {
   const { userData } = useContext(AppContext);
   const isAdmin = userData?.role === "admin" || userData?.role === "owner";
 
-  const { form, setForm, setField, error, setError, loading, setLoading } =
-    useForm(EMPTY_FORM);
+  const [initial] = useState(() => ({ ...EMPTY_FORM, ...form_from(staff) }));
+  const { form, setField, error, setError, loading, setLoading } = useForm(initial);
 
-  const [branches, setBranches] = useState([]);
-
-  // Sync form with staff prop
-  useEffect(() => {
-    if (!staff) return;
-    setForm({
-      name: staff.name ?? "",
-      email: staff.email ?? "",
-      role: staff.role ?? "employee",
-      branch:
-        typeof staff.branch === "object"
-          ? (staff.branch?._id ?? "")
-          : (staff.branch ?? ""),
-      hourly_rate: staff.hourly_rate ?? "",
-    });
-    setError(null);
-  }, [staff?._id, setForm, setError]);
-
-  // Load branches (admin only)
-  useEffect(() => {
-    if (!open || !isAdmin) return;
-    axios
-      .get(`/api/branches`)
-      .then(({ data }) => {
-        if (data.success) setBranches(data.branches);
-      })
-      .catch(console.error);
-  }, [open, isAdmin]);
+  const branches = useBranches({ enabled: isAdmin });
 
   const handleClose = () => {
     setError(null);

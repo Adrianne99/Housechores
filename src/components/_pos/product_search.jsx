@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Search, ScanLine } from "lucide-react";
 
 export const ProductSearch = ({
@@ -26,10 +26,6 @@ export const ProductSearch = ({
     [externalInputRef],
   );
 
-  // Auto-focus on mount and after a sale
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   const handlePick = useCallback(
     (product) => {
@@ -79,8 +75,8 @@ export const ProductSearch = ({
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           onKeyDown={handleKeyDown}
           placeholder="Scan barcode or search product name..."
-          className="w-full pl-12 pr-4 py-4 text-base border-2 border-indigo-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 bg-white"
           autoFocus
+          className="w-full pl-12 pr-4 py-4 text-base border-2 border-indigo-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 bg-white"
         />
       </div>
 

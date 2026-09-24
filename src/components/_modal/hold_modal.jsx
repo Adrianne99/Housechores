@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Pause, X } from "lucide-react";
 import { Button } from "../buttons";
 
@@ -11,10 +11,6 @@ const HoldModalBody = ({ onClose, onConfirm, loading }) => {
   const [note, setNote] = useState("");
   const inputRef = useRef(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 50);
-    return () => clearTimeout(t);
-  }, []);
 
   const handleSubmit = () => {
     onConfirm({ customer_name: name, note });
@@ -50,6 +46,7 @@ const HoldModalBody = ({ onClose, onConfirm, loading }) => {
             </label>
             <input
               ref={inputRef}
+            autoFocus
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}

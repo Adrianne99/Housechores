@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Check, Pencil, X } from "lucide-react";
 import axios from "axios";
 
@@ -9,14 +9,11 @@ export const EditableSupplier = ({ productId, supplier, onUpdate }) => {
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
 
-  useEffect(() => {
-    setValue(supplier ?? "");
-  }, [supplier]);
 
   const handleEdit = () => {
+    setValue(supplier ?? ""); // start from the current supplier
     setEditing(true);
     setError(null);
-    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const handleCancel = () => {
@@ -53,6 +50,7 @@ export const EditableSupplier = ({ productId, supplier, onUpdate }) => {
         <div className="flex items-center gap-1">
           <input
             ref={inputRef}
+            autoFocus
             value={value}
             onChange={(e) => {
               setValue(e.target.value);

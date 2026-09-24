@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { PackagePlus, X } from "lucide-react";
 import { Button } from "../buttons";
 
@@ -14,10 +14,6 @@ const CustomItemModalBody = ({ onClose, onAdd }) => {
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 50);
-    return () => clearTimeout(t);
-  }, []);
 
   const handleAdd = () => {
     if (!name.trim()) return setError("Name is required.");
@@ -69,6 +65,7 @@ const CustomItemModalBody = ({ onClose, onAdd }) => {
             </label>
             <input
               ref={inputRef}
+            autoFocus
               type="text"
               value={name}
               onChange={(e) => {

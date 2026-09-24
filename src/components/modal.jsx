@@ -3,7 +3,6 @@ import {
   useRef,
   memo,
   useCallback,
-  useEffect,
   useContext,
 } from "react";
 import {
@@ -24,6 +23,7 @@ import { Button } from "./buttons";
 import { UNITS, CATEGORIES, INITIAL_FORM } from "../constants/modal";
 import { AppContext } from "../context/app_context";
 import axios from "axios";
+import { useBranches } from "../hooks/use_branches";
 
 const STEPS = [
   { id: 1, label: "Product", icon: Package },
@@ -89,44 +89,38 @@ const UnitGrid = memo(({ selected, onSelect }) => (
 ));
 
 // ── Barcode search hook ────────────────────────────────────────
-const useBarcodeSearch = (barcode, setField) => {
-  const [searching, setSearching] = useState(false);
-  const [found, setFound] = useState(false);
-  const [existingBranches, setExistingBranches] = useState([]);
+const NO_MATCH = { searching: false, found: false, existingBranches: [] };
 
-  useEffect(() => {
-    if (!barcode || barcode.length < 4) {
-      setFound(false);
-      setExistingBranches([]);
-      return;
-    }
-    const timeout = setTimeout(async () => {
-      setSearching(true);
+const useBarcodeSearch = (setField, onExisting) => {
+  const [state, setState] = useState(NO_MATCH);
+  const timer = useRef(null);
+
+  // Call from the barcode input's onChange; waits 600ms after typing stops.
+  const lookup = (barcode) => {
+    clearTimeout(timer.current);
+    if (!barcode || barcode.length < 4) return setState(NO_MATCH);
+    timer.current = setTimeout(async () => {
+      setState((s) => ({ ...s, searching: true }));
       try {
-        const { data } = await axios.get(`/api/products/barcode/${barcode}`);
+        const { data } = await axios.get(`/api/products/barcode/${encodeURIComponent(barcode)}`);
         if (data.success && data.product) {
           setField("name", data.product.name);
           setField("brand", data.product.brand);
           setField("category", data.product.category);
           setField("unit", data.product.unit);
-          setFound(true);
-          setExistingBranches(data.existing_branches ?? []);
+          const existing = data.existing_branches ?? [];
+          setState({ searching: false, found: true, existingBranches: existing });
+          onExisting?.(existing);
         } else {
-          setFound(false);
-          setExistingBranches([]);
+          setState(NO_MATCH);
         }
       } catch {
-        setFound(false);
-        setExistingBranches([]);
-      } finally {
-        setSearching(false);
+        setState(NO_MATCH);
       }
     }, 600);
+  };
 
-    return () => clearTimeout(timeout);
-  }, [barcode]);
-
-  return { searching, found, existingBranches };
+  return { ...state, lookup };
 };
 
 // ── Step bar ───────────────────────────────────────────────────
@@ -296,9 +290,12 @@ const Step1 = ({
   setSelectedBranch,
   hideBranch = false,
 }) => {
-  const { searching, found, existingBranches } = useBarcodeSearch(
-    form.barcode,
+  // If the product already exists in the chosen branch, clear the choice.
+  const { searching, found, existingBranches, lookup } = useBarcodeSearch(
     setField,
+    (existing) => {
+      if (selectedBranch && existing.includes(selectedBranch._id)) setSelectedBranch(null);
+    },
   );
 
   return (
@@ -317,7 +314,10 @@ const Step1 = ({
           <Input
             placeholder="e.g. 4800016644801"
             value={form.barcode}
-            onChange={(e) => setField("barcode", e.target.value)}
+            onChange={(e) => {
+              setField("barcode", e.target.value);
+              lookup(e.target.value.trim());
+            }}
           />
           {searching && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -494,27 +494,25 @@ const useFormState = (initial) => {
 };
 
 // ── Add Product Modal ──────────────────────────────────────────
-export const AddProductModal = ({ open, onClose, onSuccess }) => {
+// Mounted only while open, so every opening starts clean.
+export const AddProductModal = (props) =>
+  props.open ? <AddProductBody {...props} /> : null;
+
+const AddProductBody = ({ onClose, onSuccess }) => {
   // ⬇️ NEW: get current user to detect role
   const { userData } = useContext(AppContext);
   const isManager = userData?.role === "branch_manager";
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState(null);
+  // Managers always add to their own branch (preset once on open).
+  const [selectedBranch, setSelectedBranch] = useState(() =>
+    isManager && userData?.branch
+      ? { _id: userData.branch?._id ?? userData.branch, name: "Your Branch" }
+      : null,
+  );
   const { form, setForm, errors, setErrors, setField, handlePricingChange } =
     useFormState(INITIAL_FORM);
-
-  // ⬇️ NEW: auto-fill branch for managers when modal opens
-  // userData.branch is an ObjectId. We synthesize a minimal branch object
-  // so existing logic (selectedBranch._id) keeps working without refactor.
-  useEffect(() => {
-    if (open && isManager && userData?.branch) {
-      setSelectedBranch({ _id: userData.branch, name: "Your Branch" });
-    }
-  }, [open, isManager, userData?.branch]);
-
-  if (!open) return null;
 
   const handleNext = () => {
     // ⬇️ CHANGED: only validate branch when manager is NOT auto-filling
@@ -541,7 +539,7 @@ export const AddProductModal = ({ open, onClose, onSuccess }) => {
     try {
       const { data } = await axios.post("/api/products/create-product", {
         ...form,
-        // ⬇️ For managers, this comes from userData.branch (set in useEffect)
+        // ⬇️ For managers, this comes from userData.branch (preset on open)
         // For admins, this comes from BranchSelector
         // Backend will also force-overwrite this for managers as a security layer
         branch: selectedBranch._id,
@@ -619,156 +617,13 @@ export const AddProductModal = ({ open, onClose, onSuccess }) => {
 };
 
 // ── Edit Product Modal ─────────────────────────────────────────
-export const EditProductModal = ({ open, onClose, onSuccess, products }) => {
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-
-  const toForm = (p) => ({
-    barcode: p.barcode,
-    name: p.name,
-    brand: p.brand,
-    category: p.category,
-    unit: p.unit,
-    stock_management: {
-      current_stock: p.stock_management.current_stock,
-      reorder_level: p.stock_management.reorder_level,
-      supplier: p.stock_management.supplier ?? "",
-    },
-    pricing: {
-      cost_per_unit: p.pricing.cost_per_unit,
-      markup_value: p.pricing.markup_value,
-      selling_price: p.pricing.selling_price,
-    },
-  });
-
-  const { form, setForm, errors, setErrors, setField, handlePricingChange } =
-    useFormState(products ? toForm(products) : INITIAL_FORM);
-
-  useEffect(() => {
-    if (products) {
-      setForm(toForm(products));
-      setErrors({});
-      setStep(1);
-    }
-  }, [products?._id]);
-
-  if (!open || !products) return null;
-
-  const handleNext = () => {
-    const errs = validateStep(step, form);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-    step < STEPS.length ? setStep((s) => s + 1) : handleSubmit();
-  };
-
-  const handleSubmit = async () => {
-    const errs = validateStep(3, form);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data } = await axios.put(`/api/products/${products._id}`, {
-        ...form,
-        stock_management: {
-          ...form.stock_management,
-          current_stock: Number(form.stock_management.current_stock),
-          reorder_level: Number(form.stock_management.reorder_level),
-        },
-        pricing: {
-          cost_per_unit: Number(form.pricing.cost_per_unit),
-          markup_value: Number(form.pricing.markup_value),
-          selling_price: Number(form.pricing.selling_price),
-        },
-      });
-      if (!data.success)
-        throw new Error(data.message || "Failed to update product");
-      setErrors({});
-      setStep(1);
-      onSuccess?.();
-      onClose();
-    } catch (err) {
-      setErrors({ submit: err.response?.data?.message || err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClose = () => {
-    setErrors({});
-    setStep(1);
-    onClose();
-  };
-
-  return (
-    <ModalShell
-      title="Edit Product"
-      subtitle={`Step ${step} of ${STEPS.length}`}
-      step={step}
-      onClose={handleClose}
-      onBack={() => {
-        setErrors({});
-        setStep((s) => s - 1);
-      }}
-      onNext={handleNext}
-      nextLabel={step < STEPS.length ? "Next" : "Save Changes"}
-      loading={loading}
-      errors={errors}
-    >
-      {step === 1 && (
-        <Step1
-          form={form}
-          errors={errors}
-          setField={setField}
-          hideBranch={true}
-        />
-      )}
-      {step === 2 && <Step2 form={form} errors={errors} setField={setField} />}
-      {step === 3 && (
-        <Step3
-          form={form}
-          errors={errors}
-          handlePricingChange={handlePricingChange}
-        />
-      )}
-    </ModalShell>
-  );
-};
-
 // ── Branch Selector ────────────────────────────────────────────
 const BranchSelector = memo(
   ({ selected, onSelect, error, existingBranches = [] }) => {
-    const [branches, setBranches] = useState([]);
+    const branches = useBranches();
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
-    useEffect(() => {
-      axios
-        .get("/api/branches")
-        .then(({ data }) => {
-          if (data.success) setBranches(data.branches);
-        })
-        .catch(console.error);
-    }, []);
-
-    useEffect(() => {
-      const handleClickOutside = (e) => {
-        if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-      };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    useEffect(() => {
-      if (selected && existingBranches.includes(selected._id)) {
-        onSelect(null);
-      }
-    }, [existingBranches]);
 
     const availableBranches = branches.filter(
       (b) => !existingBranches.includes(b._id),
@@ -796,6 +651,10 @@ const BranchSelector = memo(
             />
           </button>
 
+          {open && (
+            // Transparent layer: clicking outside closes the list.
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          )}
           {open && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
               <div className="max-h-40 overflow-y-auto py-1">

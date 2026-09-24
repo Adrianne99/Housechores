@@ -1,31 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { get, error_message } from "../lib/query";
 
 // Role-scoped sales summary for one business day ("YYYY-MM-DD").
 // Employees get their own sales, managers their branch.
 export const useSalesSummary = (date) => {
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const refresh = useCallback(() => {
-    let stale = false;
-    axios
-      .get("/api/orders/summary", { params: date ? { date } : {} })
-      .then(({ data }) => {
-        if (stale) return;
-        if (!data.success) throw new Error(data.message);
-        setSummary(data.summary);
-        setError(null);
-      })
-      .catch((err) => !stale && setError(err.response?.data?.message || err.message))
-      .finally(() => !stale && setLoading(false));
-    return () => {
-      stale = true;
-    };
-  }, [date]);
-
-  useEffect(() => refresh(), [refresh]);
-
-  return { summary, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["orders", "summary", date ?? "today"],
+    queryFn: () => get("/api/orders/summary", date ? { date } : undefined),
+    select: (data) => data.summary,
+    placeholderData: keepPreviousData, // switching dates doesn't blank the page
+  });
+  return { summary: q.data ?? null, loading: q.isPending, error: error_message(q.error), refresh: q.refetch };
 };

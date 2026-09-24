@@ -14,8 +14,10 @@ import { HoldModal } from "../../components/_modal/hold_modal";
 import { HeldOrdersPanel } from "../../components/_pos/held_orders";
 import { CustomItemModal } from "../../components/_modal/custom_item";
 import { useCart } from "../../hooks/use_cart";
-import { useProductLookup } from "../../hooks/use_product_lookup";
-import { useDrawer } from "../../hooks/use_drawer";
+import { useProductLookup, apply_sale_to_products } from "../../hooks/use_product_lookup";
+import { useDrawer, apply_sale_to_drawer } from "../../hooks/use_drawer";
+import { useHeldOrders, refresh_held, drop_held } from "../../hooks/use_held_orders";
+import { queryClient } from "../../lib/query";
 import { ROLE_PREFIX } from "../../constants/navigation";
 import { Link } from "react-router";
 import { Wallet } from "lucide-react";
@@ -36,8 +38,7 @@ export default function POSPage() {
     isEmpty,
   } = useCart();
 
-  const { allProducts, findByBarcode, search, loading, refresh } =
-    useProductLookup();
+  const { allProducts, findByBarcode, search, loading } = useProductLookup();
 
   const searchInputRef = useRef(null);
   const { userData } = useContext(AppContext);
@@ -54,21 +55,11 @@ export default function POSPage() {
   const [completedOrder, setCompletedOrder] = useState(null);
   const [scanError, setScanError] = useState(null);
   const [holdingLoading, setHoldingLoading] = useState(false);
-  const [heldCount, setHeldCount] = useState(0);
-  const [heldRefreshKey, setHeldRefreshKey] = useState(0);
   const [resumedFromId, setResumedFromId] = useState(null);
 
-  // Fetch held count for badge
-  useEffect(() => {
-    axios
-      .get(`/api/held-orders`)
-      .then(({ data }) => {
-        if (data.success) setHeldCount(data.held_orders.length);
-      })
-      .catch(() => {});
-  }, [heldRefreshKey]);
-
-  const refreshHeld = useCallback(() => setHeldRefreshKey((k) => k + 1), []);
+  // Held-order badge reads the shared cached list.
+  const { data: heldOrders = [] } = useHeldOrders();
+  const heldCount = heldOrders.length;
 
   const handleSaleSuccess = useCallback(
     async (order) => {
@@ -77,20 +68,23 @@ export default function POSPage() {
 
       // If we resumed from a held order, delete it now that the sale completed
       if (resumedFromId) {
-        try {
-          await axios.delete(`/api/held-orders/${resumedFromId}`);
-        } catch (err) {
-          console.error("Could not delete resumed held order:", err);
-        }
+        drop_held(resumedFromId);
+        axios.delete(`/api/held-orders/${resumedFromId}`).catch((err) =>
+          console.error("Could not delete resumed held order:", err),
+        );
         setResumedFromId(null);
       }
 
       clearCart();
-      refresh();
-      refreshHeld();
-      drawer.refresh();
+      // No reloading: apply the finished sale to what's already on screen
+      // (stock goes down, drawer cash goes up). Reports elsewhere are just
+      // marked out of date and refresh quietly when opened.
+      apply_sale_to_products(order);
+      apply_sale_to_drawer(order);
+      queryClient.invalidateQueries({ queryKey: ["orders"], refetchType: "none" });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], refetchType: "none" });
     },
-    [clearCart, refresh, refreshHeld, resumedFromId, drawer],
+    [clearCart, resumedFromId],
   );
 
   const handleNewSale = useCallback(() => {
@@ -137,14 +131,14 @@ export default function POSPage() {
         }
         clearCart();
         setShowHoldModal(false);
-        refreshHeld();
+        refresh_held();
       } catch (err) {
         alert(err.response?.data?.message || err.message);
       } finally {
         setHoldingLoading(false);
       }
     },
-    [items, clearCart, refreshHeld, resumedFromId],
+    [items, clearCart, resumedFromId],
   );
 
   // Clearing the cart also forgets which held order it came from, so a
@@ -248,9 +242,11 @@ export default function POSPage() {
         )
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 mt-6 h-[calc(100vh-200px)]">
+      {/* Desktop: fills the screen and each panel scrolls inside it.
+          Mobile: panels stack and the page scrolls. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 mt-4 lg:h-[calc(100vh-190px)] lg:min-h-[560px]">
         {/* Left */}
-        <div className="flex flex-col gap-4 min-h-0">
+        <div className="flex flex-col gap-4 min-h-0 max-lg:h-[70vh]">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div className="flex gap-2 items-center">
               <div className="flex-1">
@@ -291,7 +287,7 @@ export default function POSPage() {
         </div>
 
         {/* Right: Cart */}
-        <div className="h-full">
+        <div className="h-full min-h-0 max-lg:h-[80vh]">
           <CartPanel
             items={items}
             discount={discount}
@@ -348,7 +344,6 @@ export default function POSPage() {
         open={showHeldPanel}
         onClose={() => setShowHeldPanel(false)}
         onResume={handleResumeHeld}
-        refreshKey={heldRefreshKey}
       />
 
       <CustomItemModal

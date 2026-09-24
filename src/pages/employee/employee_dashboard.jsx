@@ -1,6 +1,7 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext } from "react";
 import { Link, useNavigate } from "react-router";
-import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
+import { get } from "../../lib/query";
 import {
   BadgeCheck,
   CalendarClock,
@@ -145,20 +146,11 @@ const ProfileCard = ({ user, clock }) => {
 
 // ─── Today's transactions (own sales) ────────────────────────
 const useRecentOrders = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    let stale = false;
-    axios
-      .get("/api/orders", { params: { limit: 6 } })
-      .then(({ data }) => !stale && setOrders(data.orders ?? []))
-      .catch(() => {})
-      .finally(() => !stale && setLoading(false));
-    return () => {
-      stale = true;
-    };
-  }, []);
-  return { orders, loading };
+  const q = useQuery({
+    queryKey: ["orders", "list", { limit: 6 }],
+    queryFn: () => get("/api/orders", { limit: 6 }),
+  });
+  return { orders: q.data?.orders ?? [], loading: q.isPending };
 };
 
 const STATUS_STYLES = {

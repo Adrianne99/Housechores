@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useNow } from "../../hooks/use_now";
 import { CalendarDays, LogIn, LogOut, Timer, Wallet } from "lucide-react";
 import Header from "../../components/header";
 import { DashboardCard } from "../../components/card";
@@ -6,16 +6,6 @@ import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { useTimeClock } from "../../hooks/use_time_clock";
 import { clock_label, date_of, hours_label, peso, time_of } from "../../utils/format";
 import { cn } from "../../utils/utils";
-
-// Ticks every second while mounted.
-const useNow = () => {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return now;
-};
 
 const elapsed = (from, now) => {
   const s = Math.max(0, Math.floor((now - new Date(from)) / 1000));

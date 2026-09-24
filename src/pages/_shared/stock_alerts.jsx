@@ -126,7 +126,8 @@ export default function StockAlerts() {
                       <td className="py-2.5 text-right">
                         {is_manager ? (
                           <Link
-                            to={`${receiving}?product=${p._id}`}
+                            to={receiving}
+                            state={{ product: p }}
                             className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg px-2.5 py-1"
                           >
                             <PackagePlus size={13} /> Receive stock

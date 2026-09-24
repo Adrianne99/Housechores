@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router";
+import { useNavigate, Navigate } from "react-router";
 import { H2, Paragraph } from "../../components/texts";
 import { Button } from "../../components/buttons";
 import { AppContext } from "../../context/app_context";
@@ -66,11 +66,11 @@ const Email_verification = () => {
     }
   };
 
-  useEffect(() => {
-    if (isLoggedIn && userData?.is_account_verified) {
-      navigate("/dashboard");
-    }
-  }, [isLoggedIn, userData, navigate]);
+
+  // Already verified → go to the dashboard (render-time redirect).
+  if (isLoggedIn && userData?.is_account_verified) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="relative min-h-screen bg-background font-inter flex flex-col items-center justify-center p-4 overflow-hidden">

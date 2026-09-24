@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
+import { get, error_message } from "../lib/query";
 import { Printer, X } from "lucide-react";
 import { date_of, peso, time_of } from "../utils/format";
 import { z_label } from "../utils/cash";
@@ -30,25 +30,13 @@ export const OverShort = ({ value }) => {
 
 // Printable Z-reading (closed drawer) or X-reading (still open) for one drawer.
 export const ZReportModal = ({ sessionId, onClose }) => {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
+  const q = useQuery({
+    queryKey: ["drawer", "detail", sessionId],
+    queryFn: () => get(`/api/drawer/${sessionId}`),
+  });
+  const data = q.data;
+  const error = error_message(q.error);
 
-  useEffect(() => {
-    let stale = false;
-    axios
-      .get(`/api/drawer/${sessionId}`)
-      .then(({ data }) => !stale && setData(data))
-      .catch((err) => !stale && setError(err.response?.data?.message || err.message));
-    return () => {
-      stale = true;
-    };
-  }, [sessionId]);
-
-  useEffect(() => {
-    const on_key = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", on_key);
-    return () => window.removeEventListener("keydown", on_key);
-  }, [onClose]);
 
   const s = data?.session;
   const z = data?.summary;
@@ -59,6 +47,7 @@ export const ZReportModal = ({ sessionId, onClose }) => {
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm print:hidden" onClick={onClose} />
       <div
         role="dialog"
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
         aria-modal="true"
         aria-label="Z-reading"
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[92vh] overflow-y-auto print:shadow-none print:max-h-none print:mx-0"
@@ -69,7 +58,7 @@ export const ZReportModal = ({ sessionId, onClose }) => {
             <button type="button" onClick={() => window.print()} aria-label="Print" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
               <Printer size={18} />
             </button>
-            <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
+            <button type="button" onClick={onClose} aria-label="Close" autoFocus className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
               <X size={18} />
             </button>
           </div>

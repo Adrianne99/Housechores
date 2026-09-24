@@ -1,12 +1,13 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { get, queryClient } from "../../lib/query";
 import { Plus, Pencil, UserX, UserCheck, Trash2 } from "lucide-react";
-import axios from "axios";
 
 import Header from "../../components/header";
 import { Button } from "../../components/buttons";
 import { AppContext } from "../../context/app_context";
-import { Add_Staff_Modal } from "../../components/_modal/add_staff"; // adjust paths
-import { Edit_Staff_Modal } from "../../components/_modal/edit_staff"; // adjust paths
+import { AddStaffModal } from "../../components/_modal/add_staff"; // adjust paths
+import { EditStaffModal } from "../../components/_modal/edit_staff"; // adjust paths
 import {
   Deactivate_Staff_Modal,
   Reactivate_Staff_Modal,
@@ -17,9 +18,9 @@ export default function StaffPage() {
   const { userData } = useContext(AppContext);
   const isAdmin = ["admin", "owner"].includes(userData?.role);
 
-  const [staff, setStaff] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refresh, setRefresh] = useState(0);
+  const staff_q = useQuery({ queryKey: ["staff"], queryFn: () => get("/api/staff") });
+  const staff = staff_q.data?.staff ?? [];
+  const loading = staff_q.isPending;
 
   // Modal state
   const [showAdd, setShowAdd] = useState(false);
@@ -28,21 +29,8 @@ export default function StaffPage() {
   const [reactivateTarget, setReactivateTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const triggerRefresh = () => {
-    setLoading(true);
-    setRefresh((p) => p + 1);
-  };
-
-  // Fetch staff list
-  useEffect(() => {
-    axios
-      .get(`/api/staff`)
-      .then(({ data }) => {
-        if (data.success) setStaff(data.staff);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [refresh]);
+  // After add/edit/deactivate/delete, refetch the cached staff list.
+  const triggerRefresh = () => queryClient.invalidateQueries({ queryKey: ["staff"] });
 
   return (
     <div className="relative w-full space-y-12 pt-3">
@@ -163,13 +151,13 @@ export default function StaffPage() {
       </div>
 
       {/* Modals */}
-      <Add_Staff_Modal
+      <AddStaffModal
         open={showAdd}
         onClose={() => setShowAdd(false)}
         onSuccess={triggerRefresh}
       />
 
-      <Edit_Staff_Modal
+      <EditStaffModal
         open={!!editTarget}
         staff={editTarget}
         onClose={() => setEditTarget(null)}

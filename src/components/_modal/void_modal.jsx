@@ -1,21 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { XCircle, X } from "lucide-react";
 import axios from "axios";
 import { Button } from "../buttons";
 
-export const VoidModal = ({ open, onClose, order, onSuccess }) => {
+// Body mounts only while open, so each void starts with an empty form.
+export const VoidModal = (props) =>
+  props.open && props.order ? <VoidModalBody {...props} /> : null;
+
+const VoidModalBody = ({ onClose, order, onSuccess }) => {
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (open) {
-      setReason("");
-      setError(null);
-    }
-  }, [open]);
 
-  if (!open || !order) return null;
 
   const handleSubmit = async () => {
     if (!reason.trim()) {

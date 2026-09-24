@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Button } from "./buttons";
 
 export const ModalShell = ({
@@ -14,14 +14,6 @@ export const ModalShell = ({
 }) => {
   const ref = useRef(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) onClose();
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -33,7 +25,7 @@ export const ModalShell = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div
         ref={ref}
         className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizeClass} mx-4 overflow-hidden`}

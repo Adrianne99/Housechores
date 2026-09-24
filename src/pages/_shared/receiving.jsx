@@ -1,6 +1,10 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useContext, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { get as api_get, queryClient, error_message } from "../../lib/query";
+import { useBranches } from "../../hooks/use_branches";
+import { useProducts } from "../../hooks/use_product_lookup";
 import { ChevronDown, ChevronRight, PackagePlus, Search, Trash2, Truck } from "lucide-react";
 import Header from "../../components/header";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
@@ -9,102 +13,61 @@ import { date_of, peso, time_of } from "../../utils/format";
 
 const c = (n) => Math.round(Number(n || 0) * 100);
 
+const line_from = (p) => ({
+  inventory_id: p._id,
+  name: p.name,
+  unit: p.unit,
+  current: p.stock_management.current_stock,
+  quantity: 1,
+  unit_cost: p.pricing.cost_per_unit,
+});
+
 export default function Receiving() {
   const { userData } = useContext(AppContext);
   const is_admin = userData?.role === "admin";
-  const [params, setParams] = useSearchParams();
+  // "Receive stock" on Stock Alerts passes the product in the link state,
+  // so the first line is ready immediately (no effect waiting on data).
+  const { state: nav } = useLocation();
+  const preset = nav?.product ?? null;
 
-  const [branches, setBranches] = useState([]);
-  const [branch, setBranch] = useState("");
-  const [products, setProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const branches = useBranches({ enabled: is_admin });
+  const [branchChoice, setBranch] = useState(preset?.branch?._id ?? "");
+  const branch = branchChoice || branches[0]?._id || "";
+  const { data: products = [], isPending: loadingProducts } = useProducts(
+    is_admin ? branch : undefined,
+    { enabled: !is_admin || !!branch },
+  );
 
-  const [supplier, setSupplier] = useState("");
+  const [supplier, setSupplier] = useState(preset?.stock_management?.supplier ?? "");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
   const [updateCost, setUpdateCost] = useState(true);
-  const [lines, setLines] = useState([]); // { inventory_id, name, unit, current, quantity, unit_cost }
+  const [lines, setLines] = useState(() => (preset ? [line_from(preset)] : [])); // { inventory_id, name, unit, current, quantity, unit_cost }
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(null);
 
-  const [history, setHistory] = useState([]);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [historyKey, setHistoryKey] = useState(0);
+  const history_q = useQuery({
+    queryKey: ["deliveries"],
+    queryFn: () => api_get("/api/deliveries", { limit: 30 }),
+  });
+  const history = history_q.data?.deliveries ?? [];
+  const historyLoading = history_q.isPending;
   const [expanded, setExpanded] = useState(null);
   const searchRef = useRef(null);
-
-  // Admins choose a branch; managers use their own.
-  useEffect(() => {
-    if (!is_admin) return;
-    axios
-      .get("/api/branches")
-      .then(({ data }) => {
-        setBranches(data.branches ?? []);
-        if (data.branches?.length) setBranch((b) => b || data.branches[0]._id);
-      })
-      .catch(() => {});
-  }, [is_admin]);
-
-  useEffect(() => {
-    if (is_admin && !branch) return;
-    let stale = false;
-    axios
-      .get("/api/products", { params: is_admin ? { branch_id: branch } : {} })
-      .then(({ data }) => !stale && setProducts(data.products ?? []))
-      .catch(() => {})
-      .finally(() => !stale && setLoadingProducts(false));
-    return () => {
-      stale = true;
-    };
-  }, [is_admin, branch]);
-
-  useEffect(() => {
-    let stale = false;
-    axios
-      .get("/api/deliveries", { params: { limit: 30 } })
-      .then(({ data }) => !stale && setHistory(data.deliveries ?? []))
-      .catch(() => {})
-      .finally(() => !stale && setHistoryLoading(false));
-    return () => {
-      stale = true;
-    };
-  }, [historyKey]);
 
   const add = (p) => {
     setLines((ls) =>
       ls.some((l) => l.inventory_id === p._id)
         ? ls.map((l) => (l.inventory_id === p._id ? { ...l, quantity: Number(l.quantity || 0) + 1 } : l))
-        : [
-            ...ls,
-            {
-              inventory_id: p._id,
-              name: p.name,
-              unit: p.unit,
-              current: p.stock_management.current_stock,
-              quantity: 1,
-              unit_cost: p.pricing.cost_per_unit,
-            },
-          ],
+        : [...ls, line_from(p)],
     );
     if (!supplier && p.stock_management.supplier) setSupplier(p.stock_management.supplier);
     setQuery("");
     setSaved(null);
     searchRef.current?.focus();
   };
-
-  // "Receive stock" from Stock Alerts opens this page with ?product=<id>.
-  const preselect = params.get("product");
-  useEffect(() => {
-    if (!preselect || products.length === 0) return;
-    const p = products.find((x) => x._id === preselect);
-    if (p) {
-      add(p);
-      setParams({}, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preselect, products]);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -149,12 +112,11 @@ export default function Receiving() {
       setLines([]);
       setReference("");
       setNotes("");
-      setHistoryKey((k) => k + 1);
-      // Refresh stock numbers shown in the picker
-      const fresh = await axios.get("/api/products", { params: is_admin ? { branch_id: branch } : {} });
-      setProducts(fresh.data.products ?? []);
+      queryClient.invalidateQueries({ queryKey: ["deliveries"] });
+      // Stock changed: refresh cached product lists (POS, inventory, picker).
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err) {
-      setError(err.response?.data?.message || err.message);
+      setError(error_message(err));
     } finally {
       setSaving(false);
     }
@@ -181,7 +143,6 @@ export default function Receiving() {
                   onChange={(e) => {
                     setBranch(e.target.value);
                     setLines([]);
-                    setLoadingProducts(true);
                   }}
                   className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
                 >

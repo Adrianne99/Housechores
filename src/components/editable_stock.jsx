@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { Pencil, X } from "lucide-react";
 import { Button } from "./buttons";
 import { CommentField } from "./comment_field";
@@ -10,27 +10,21 @@ export const EditableStock = ({ productId, stock_management, onUpdate }) => {
   const [form, setForm] = useState(stock_management);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const latestStock = useRef(stock_management);
   const { comment, setComment, resetComment } = useEditComment();
   const modalRef = useRef(null);
 
-  useEffect(() => {
-    latestStock.current = stock_management;
-    setForm(stock_management);
-  }, [stock_management]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (modalRef.current && !modalRef.current.contains(e.target))
-        handleClose();
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
+  // Fill the form from the current values each time the editor opens
+  // (instead of syncing props into state with an effect).
+  const open = () => {
+    setForm(stock_management);
+    setEditing(true);
+  };
 
   const handleClose = () => {
     setEditing(false);
-    setForm(latestStock.current);
+    setForm(stock_management);
     setError(null);
     resetComment();
   };
@@ -73,7 +67,7 @@ export const EditableStock = ({ productId, stock_management, onUpdate }) => {
       <div className="flex items-center gap-2">
         {form.current_stock}
         <button
-          onClick={() => setEditing(true)}
+          onClick={open}
           className="p-1 rounded-md hover:bg-gray-100 text-gray-300 hover:text-gray-500 transition-colors"
         >
           <Pencil size={12} />

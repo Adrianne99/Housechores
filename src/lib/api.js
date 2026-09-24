@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clear_session_cache } from "./query";
 
 // Single place that configures how the app talks to the backend.
 //
@@ -11,18 +12,15 @@ import axios from "axios";
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL || "";
 axios.defaults.withCredentials = true;
 
-// Session expired / account deactivated → tell the app to log out.
-// AppContext listens for this event and clears the user, which makes
-// AuthRoute redirect to /login.
-export const AUTH_EXPIRED_EVENT = "auth:expired";
-
+// Session expired / account deactivated → sign out everywhere. Clearing
+// the "me" query makes AuthRoute redirect to /login.
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
     const url = error.config?.url ?? "";
     const is_auth_probe = url.includes("/api/user/data") || url.includes("/api/auth/");
     if (error.response?.status === 401 && !is_auth_probe) {
-      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+      clear_session_cache();
     }
     return Promise.reject(error);
   },
