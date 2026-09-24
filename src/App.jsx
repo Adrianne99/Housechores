@@ -10,14 +10,11 @@ import {
 } from "react-router";
 import { AuthRoute } from "./pages/auth/routes";
 import { AppContext, AppContextProvider } from "./context/app_context";
-import { useIsMobile } from "./hooks/use_is_mobile";
 import Sidebar from "./components/sidebar";
 import Navigation from "./components/navbar";
 import { NotificationProvider } from "./context/notification_context";
 
 // Pages are code-split so each role only downloads what it uses.
-// ─── Public ──────────────────────────────────────────────────
-const Hero = lazy(() => import("./pages/public/hero"));
 
 // ─── Auth ────────────────────────────────────────────────────
 const Login = lazy(() => import("./pages/auth/login"));
@@ -45,16 +42,13 @@ const ManagerOrderHistory = lazy(
 );
 
 // ─── Employee ────────────────────────────────────────────────
-const Staff_inventory = lazy(() => import("./pages/employee/staff_inventory"));
 const EmployeeOrderHistory = lazy(
   () => import("./pages/employee/order_history"),
 );
 
 // ─── Shared ──────────────────────────────────────────────────
 const Pos = lazy(() => import("./pages/_shared/pos"));
-const MobileProfile = lazy(() => import("./pages/profile/mobile_profile"));
-const DesktopProfile = lazy(() => import("./pages/profile/desktop_profile"));
-const Edit_profile = lazy(() => import("./pages/profile/edit_profile"));
+const Profile = lazy(() => import("./pages/profile/desktop_profile"));
 
 const EmployeeDashboard = lazy(() => import("./pages/employee/employee_dashboard"));
 const TimeClock = lazy(() => import("./pages/_shared/time_clock"));
@@ -70,6 +64,12 @@ const PageLoader = () => (
 );
 
 // ─── Redirect ────────────────────────────────────────────────
+const HomeRedirect = () => {
+  const { isLoggedIn, loading } = useContext(AppContext);
+  if (loading) return <PageLoader />;
+  return <Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />;
+};
+
 const DashboardRedirect = () => {
   const { userData, loading } = useContext(AppContext);
 
@@ -86,17 +86,6 @@ const DashboardRedirect = () => {
 };
 
 // ─── Layouts ─────────────────────────────────────────────────
-const App_layout = () => (
-  <div className="w-full h-full">
-    <div className="bg-white w-full h-fit relative">
-      <Navigation />
-      <Suspense fallback={<PageLoader />}>
-        <Outlet />
-      </Suspense>
-    </div>
-  </div>
-);
-
 const Dashboard_layout = () => (
   <NotificationProvider>
   <div className="flex w-full min-h-screen font-inter overflow-x-hidden">
@@ -135,12 +124,6 @@ const Guest_layout = () => (
   </Suspense>
 );
 
-// ─── Gates ───────────────────────────────────────────────────
-const ProfileGate = () => {
-  const isMobile = useIsMobile();
-  return isMobile ? <MobileProfile /> : <DesktopProfile />;
-};
-
 const Root = () => (
   <AppContextProvider>
     <Outlet />
@@ -162,10 +145,7 @@ const Message_page = ({ icon, title, text }) => (
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Root />}>
-      {/* ─── Public ─── */}
-      <Route element={<App_layout />}>
-        <Route index element={<Hero />} />
-      </Route>
+      <Route index element={<HomeRedirect />} />
 
       {/* ─── Unauthorized ─── */}
       <Route
@@ -265,7 +245,11 @@ const router = createBrowserRouter(
         >
           <Route element={<Dashboard_layout />}>
             <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
-            <Route path="/employee/inventory" element={<Staff_inventory />} />
+            {/* Cashier inventory was replaced by Stock Alerts */}
+            <Route
+              path="/employee/inventory"
+              element={<Navigate to="/employee/stock-alerts" replace />}
+            />
             <Route path="/employee/pos" element={<Pos />} />
             <Route
               path="/employee/history"
@@ -280,8 +264,7 @@ const router = createBrowserRouter(
 
         {/* ─── Shared ─── */}
         <Route element={<Dashboard_layout />}>
-          <Route path="profile" element={<ProfileGate />} />
-          <Route path="edit-profile" element={<Edit_profile />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="verify-account" element={<Email_verification />} />
         </Route>
       </Route>

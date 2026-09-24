@@ -38,7 +38,7 @@ export const MENU_CONFIG = [
     section: "sales",
     roles: ALL,
   },
-  { item: "Inventory", link: "/inventory", icon: Box, section: "stock", roles: ALL },
+  { item: "Inventory", link: "/inventory", icon: Box, section: "stock", roles: ["admin", "branch_manager"] },
   { item: "Stock Alerts", link: "/stock-alerts", icon: AlertTriangle, section: "stock", roles: STAFF },
   {
     item: "Staff Management",

@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Tag, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useContext, useState } from "react";
+import { Tag, X, ChevronDown, ChevronUp, KeyRound } from "lucide-react";
+import { AppContext } from "../../context/app_context";
+import { discount_approval } from "../../utils/pricing";
 
 const DISCOUNT_TYPES = [
   { value: "senior", label: "Senior Citizen (20%)", needsId: true },
@@ -15,6 +17,9 @@ export const DiscountSection = ({ discount, totals, onApply, onClear }) => {
   const [draftIdNumber, setDraftIdNumber] = useState("");
   const [draftReason, setDraftReason] = useState("");
   const [error, setError] = useState(null);
+  const { userData } = useContext(AppContext);
+  const needs_pin =
+    userData?.role === "employee" && !!discount_approval(discount, totals.subtotal);
 
   const selectedTypeConfig = DISCOUNT_TYPES.find((t) => t.value === draftType);
 
@@ -78,6 +83,11 @@ export const DiscountSection = ({ discount, totals, onApply, onClear }) => {
             <p className="text-xs text-green-600">
               -₱{totals.discount_amount.toFixed(2)}
             </p>
+            {needs_pin && (
+              <p className="text-[11px] text-amber-700 flex items-center gap-1 mt-0.5">
+                <KeyRound size={11} /> Manager PIN needed at checkout
+              </p>
+            )}
           </div>
         </div>
         <button

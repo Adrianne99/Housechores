@@ -8,7 +8,8 @@
 
 export const VAT_RATE = 0.12;
 
-// Discounts above this need the canApplyLargeDiscounts permission.
+// Discounts above this need a manager's approval (PIN) when a cashier
+// applies them. Senior/PWD discounts always do.
 export const LARGE_DISCOUNT_PERCENT = 20;
 
 export const DISCOUNT_TYPES = ["none", "senior", "pwd", "percent", "amount"];
@@ -64,14 +65,12 @@ export const compute_totals = (subtotal, discount) => {
 };
 
 /**
- * Validate a discount request. Returns { ok: true } or
- * { ok: false, status, message }.
+ * Validate the shape of a discount request (not who may give it).
+ * Returns { ok: true } or { ok: false, status, message }.
  *
  * @param {object|null|undefined} discount
- * @param {number} subtotal
- * @param {boolean} can_apply_large  caller has canApplyLargeDiscounts
  */
-export const validate_discount = (discount, subtotal, can_apply_large) => {
+export const validate_discount = (discount) => {
   if (!discount || discount.type === "none" || discount.type === undefined) {
     return { ok: true };
   }
@@ -94,23 +93,25 @@ export const validate_discount = (discount, subtotal, can_apply_large) => {
   if (!Number.isFinite(value) || value <= 0) {
     return { ok: false, status: 400, message: "Discount value must be positive." };
   }
-
-  let percent;
-  if (discount.type === "percent") {
-    if (value > 100) {
-      return { ok: false, status: 400, message: "Discount cannot exceed 100%." };
-    }
-    percent = value;
-  } else {
-    percent = subtotal > 0 ? (value / subtotal) * 100 : 100;
-  }
-
-  if (percent > LARGE_DISCOUNT_PERCENT && !can_apply_large) {
-    return {
-      ok: false,
-      status: 403,
-      message: `Discounts above ${LARGE_DISCOUNT_PERCENT}% need an admin.`,
-    };
+  if (discount.type === "percent" && value > 100) {
+    return { ok: false, status: 400, message: "Discount cannot exceed 100%." };
   }
   return { ok: true };
+};
+
+/**
+ * Why a discount needs a manager's approval, or null if it doesn't.
+ *   "senior_pwd" → any senior citizen / PWD discount
+ *   "large"      → a manual discount above LARGE_DISCOUNT_PERCENT
+ *
+ * @param {object|null|undefined} discount
+ * @param {number} subtotal VAT-inclusive subtotal in pesos
+ */
+export const discount_approval = (discount, subtotal) => {
+  if (!discount || !discount.type || discount.type === "none") return null;
+  if (discount.type === "senior" || discount.type === "pwd") return "senior_pwd";
+  const value = Number(discount.value) || 0;
+  const percent =
+    discount.type === "percent" ? value : subtotal > 0 ? (value / subtotal) * 100 : 100;
+  return percent > LARGE_DISCOUNT_PERCENT ? "large" : null;
 };

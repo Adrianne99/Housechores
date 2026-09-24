@@ -16,7 +16,7 @@ const Key = ({ children }) => (
   </kbd>
 );
 
-export const KeyboardShortcuts = () => (
+export const KeyboardShortcuts = ({ showCustom = true }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-3">
     <div className="flex items-center gap-2 mb-2">
       <Keyboard size={15} className="text-indigo-500" />
@@ -25,7 +25,7 @@ export const KeyboardShortcuts = () => (
       </span>
     </div>
     <div className="flex flex-wrap gap-x-5 gap-y-2">
-      {SHORTCUTS.map((s) => (
+      {SHORTCUTS.filter((s) => showCustom || s.keys[0] !== "F1").map((s) => (
         <div key={s.label} className="flex items-center gap-1.5">
           {s.keys.map((k) => (
             <Key key={k}>{k}</Key>

@@ -60,13 +60,15 @@ export const CartPanel = ({
             <p className="text-xs text-gray-300 mt-1">
               Scan or search to add products
             </p>
-            <button
-              onClick={onAddCustom}
-              className="mt-4 text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-            >
-              <PackagePlus size={14} />
-              Add custom item
-            </button>
+            {onAddCustom && (
+              <button
+                onClick={onAddCustom}
+                className="mt-4 text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+              >
+                <PackagePlus size={14} />
+                Add custom item
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -143,13 +145,15 @@ export const CartPanel = ({
               </div>
             ))}
 
-            <button
-              onClick={onAddCustom}
-              className="w-full text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-xl py-2 flex items-center justify-center gap-1"
-            >
-              <PackagePlus size={14} />
-              Add custom item
-            </button>
+            {onAddCustom && (
+              <button
+                onClick={onAddCustom}
+                className="w-full text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-xl py-2 flex items-center justify-center gap-1"
+              >
+                <PackagePlus size={14} />
+                Add custom item
+              </button>
+            )}
           </div>
         )}
       </div>

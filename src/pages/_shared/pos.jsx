@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useContext } from "react";
+import { AppContext } from "../../context/app_context";
 import { Camera } from "lucide-react";
 import axios from "axios";
 import Header from "../../components/header";
@@ -35,6 +36,9 @@ export default function POSPage() {
     useProductLookup();
 
   const searchInputRef = useRef(null);
+  const { userData } = useContext(AppContext);
+  // Custom (price-typed) items are manager/admin only — see permissions.js
+  const canAddCustom = ["admin", "branch_manager"].includes(userData?.role);
 
   const [showCharge, setShowCharge] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -174,6 +178,7 @@ export default function POSPage() {
       if (anyModalOpen) return;
       switch (e.key) {
         case "F1": // add custom item
+          if (!canAddCustom) break;
           e.preventDefault();
           setShowCustomItem(true);
           break;
@@ -203,7 +208,7 @@ export default function POSPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isEmpty, anyModalOpen]);
+  }, [isEmpty, anyModalOpen, canAddCustom]);
 
   if (loading && allProducts.length === 0) {
     return (
@@ -259,7 +264,7 @@ export default function POSPage() {
           />
 
           {/* Keyboard shortcuts */}
-          <KeyboardShortcuts />
+          <KeyboardShortcuts showCustom={canAddCustom} />
         </div>
 
         {/* Right: Cart */}
@@ -278,7 +283,7 @@ export default function POSPage() {
             onCharge={() => setShowCharge(true)}
             onHold={() => setShowHoldModal(true)}
             onShowHeld={() => setShowHeldPanel(true)}
-            onAddCustom={() => setShowCustomItem(true)}
+            onAddCustom={canAddCustom ? () => setShowCustomItem(true) : undefined}
           />
         </div>
       </div>
@@ -288,6 +293,7 @@ export default function POSPage() {
         open={showCharge}
         onClose={() => setShowCharge(false)}
         total={totals.total}
+        subtotal={totals.subtotal}
         items={items}
         discount={discount}
         onSuccess={handleSaleSuccess}
