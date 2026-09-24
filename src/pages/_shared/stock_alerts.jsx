@@ -1,5 +1,8 @@
-import { useMemo, useState } from "react";
-import { AlertTriangle, Package, PackageX, RefreshCw, Search } from "lucide-react";
+import { useContext, useMemo, useState } from "react";
+import { Link } from "react-router";
+import { AlertTriangle, Package, PackagePlus, PackageX, RefreshCw, Search } from "lucide-react";
+import { AppContext } from "../../context/app_context";
+import { ROLE_PREFIX } from "../../constants/navigation";
 import Header from "../../components/header";
 import { DashboardCard } from "../../components/card";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
@@ -16,6 +19,10 @@ export default function StockAlerts() {
   const { alerts, total, loading, error, refresh, requestRestock, requested } = useStockAlerts();
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
+  const { userData } = useContext(AppContext);
+  // Cashiers ask their manager; managers/admins receive the stock themselves.
+  const is_manager = ["admin", "branch_manager"].includes(userData?.role);
+  const receiving = `${ROLE_PREFIX[userData?.role] ?? ""}/receiving`;
 
   const out_count = alerts.filter((a) => a.level === "out").length;
   const shown = useMemo(() => {
@@ -29,7 +36,14 @@ export default function StockAlerts() {
 
   return (
     <div className="relative w-full space-y-6 pt-3 pb-12">
-      <Header title="Stock Alerts" subtitle="Items at or below their reorder level in your branch." />
+      <Header
+        title="Stock Alerts"
+        subtitle={
+          is_manager
+            ? "Items at or below their reorder level. Record a delivery to restock them."
+            : "Items at or below their reorder level in your branch. Ask your manager to restock."
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <DashboardCard title="Out of stock" value={out_count} loading={loading} icon={<PackageX size={20} />} hint="can't be sold" />
@@ -110,7 +124,14 @@ export default function StockAlerts() {
                       <td className="py-2.5 text-gray-600">{p.stock_management.reorder_level}</td>
                       <td className="py-2.5 text-gray-600">{p.stock_management.supplier || "—"}</td>
                       <td className="py-2.5 text-right">
-                        {r ? (
+                        {is_manager ? (
+                          <Link
+                            to={`${receiving}?product=${p._id}`}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg px-2.5 py-1"
+                          >
+                            <PackagePlus size={13} /> Receive stock
+                          </Link>
+                        ) : r ? (
                           <span className={cn("text-xs font-medium", r.ok ? "text-green-600" : "text-red-500")}>
                             {r.ok ? "Manager notified ✓" : r.message}
                           </span>

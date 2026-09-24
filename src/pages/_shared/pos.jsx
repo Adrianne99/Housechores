@@ -15,6 +15,10 @@ import { HeldOrdersPanel } from "../../components/_pos/held_orders";
 import { CustomItemModal } from "../../components/_modal/custom_item";
 import { useCart } from "../../hooks/use_cart";
 import { useProductLookup } from "../../hooks/use_product_lookup";
+import { useDrawer } from "../../hooks/use_drawer";
+import { ROLE_PREFIX } from "../../constants/navigation";
+import { Link } from "react-router";
+import { Wallet } from "lucide-react";
 
 export default function POSPage() {
   const {
@@ -39,6 +43,8 @@ export default function POSPage() {
   const { userData } = useContext(AppContext);
   // Custom (price-typed) items are manager/admin only — see permissions.js
   const canAddCustom = ["admin", "branch_manager"].includes(userData?.role);
+  const drawer = useDrawer();
+  const drawer_link = `${ROLE_PREFIX[userData?.role] ?? "/employee"}/cash-drawer`;
 
   const [showCharge, setShowCharge] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -82,8 +88,9 @@ export default function POSPage() {
       clearCart();
       refresh();
       refreshHeld();
+      drawer.refresh();
     },
-    [clearCart, refresh, refreshHeld, resumedFromId],
+    [clearCart, refresh, refreshHeld, resumedFromId, drawer],
   );
 
   const handleNewSale = useCallback(() => {
@@ -224,6 +231,22 @@ export default function POSPage() {
   return (
     <div className="relative w-full pt-3">
       <Header title="POS Terminal" />
+
+      {/* Cash drawer status: cash sales need an open drawer */}
+      {!drawer.loading && userData?.role !== "admin" && (
+        drawer.session ? (
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-2">
+            <Wallet size={14} /> Drawer open · expected cash{" "}
+            <span className="font-semibold">₱{drawer.summary?.expected_cash?.toFixed(2)}</span>
+            <Link to={drawer_link} className="ml-auto font-semibold hover:underline">Manage drawer</Link>
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+            <Wallet size={16} /> Your cash drawer is closed — open it to accept cash payments. GCash and card still work.
+            <Link to={drawer_link} className="ml-auto font-semibold underline">Open drawer</Link>
+          </div>
+        )
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 mt-6 h-[calc(100vh-200px)]">
         {/* Left */}

@@ -56,6 +56,7 @@ const SalesReport = lazy(() => import("./pages/_shared/sales_report"));
 const StockAlerts = lazy(() => import("./pages/_shared/stock_alerts"));
 const NotificationsPage = lazy(() => import("./pages/_shared/notifications"));
 const ActivityLog = lazy(() => import("./pages/admin/activity_log"));
+const CashDrawer = lazy(() => import("./pages/_shared/cash_drawer"));
 
 const PageLoader = () => (
   <div className="h-screen flex items-center justify-center text-sm text-gray-400">
@@ -200,6 +201,7 @@ const router = createBrowserRouter(
             <Route path="/admin/pos" element={<Pos />} />
             <Route path="/admin/history" element={<AdminOrderHistory />} />
             <Route path="/admin/sales-report" element={<SalesReport />} />
+            <Route path="/admin/cash-drawer" element={<CashDrawer />} />
             <Route path="/admin/activity" element={<ActivityLog />} />
             <Route path="/admin/notifications" element={<NotificationsPage />} />
           </Route>
@@ -230,6 +232,7 @@ const router = createBrowserRouter(
               element={<ManagerOrderHistory />}
             />
             <Route path="/branch_manager/sales-report" element={<SalesReport />} />
+            <Route path="/branch_manager/cash-drawer" element={<CashDrawer />} />
             <Route path="/branch_manager/stock-alerts" element={<StockAlerts />} />
             <Route path="/branch_manager/time-clock" element={<TimeClock />} />
             <Route
@@ -256,6 +259,7 @@ const router = createBrowserRouter(
               element={<EmployeeOrderHistory />}
             />
             <Route path="/employee/sales-report" element={<SalesReport />} />
+            <Route path="/employee/cash-drawer" element={<CashDrawer />} />
             <Route path="/employee/stock-alerts" element={<StockAlerts />} />
             <Route path="/employee/time-clock" element={<TimeClock />} />
             <Route path="/employee/notifications" element={<NotificationsPage />} />
