@@ -82,6 +82,12 @@ const Login = () => {
       });
 
       if (data.success) {
+        // Ask staff "Time in now?" once they land on the dashboard.
+        try {
+          sessionStorage.setItem("ask_time_in", "1");
+        } catch {
+          // storage unavailable — no prompt
+        }
         setIsLoggedIn(true);
         setUserData(data.userData);
         showToast("Login successful! Redirecting...");

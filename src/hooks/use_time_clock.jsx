@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import { SHIFT_CHANGED_EVENT } from "../context/shift_context";
 
 // Clock-in status, this week's hours, upcoming shifts and recent logs for
 // the signed-in staff member, plus clock in/out actions.
@@ -33,6 +34,9 @@ export const useTimeClock = ({ withLogs = false } = {}) => {
 
   useEffect(() => {
     refresh();
+    // Time in/out from the login/logout prompts updates this view too.
+    window.addEventListener(SHIFT_CHANGED_EVENT, refresh);
+    return () => window.removeEventListener(SHIFT_CHANGED_EVENT, refresh);
   }, [refresh]);
 
   const toggle = useCallback(async () => {

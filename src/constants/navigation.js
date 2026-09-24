@@ -12,6 +12,7 @@ import {
   ScrollText,
   Wallet,
   Truck,
+  CalendarCheck,
 } from "lucide-react";
 
 // Map role → clean URL prefix
@@ -50,6 +51,7 @@ export const MENU_CONFIG = [
     section: "work",
     roles: ["admin", "branch_manager"],
   },
+  { item: "Attendance", link: "/attendance", icon: CalendarCheck, section: "work", roles: ["admin", "branch_manager"] },
   { item: "Cash Drawer", link: "/cash-drawer", icon: Wallet, section: "work", roles: ALL },
   { item: "Time Clock", link: "/time-clock", icon: Clock, section: "work", roles: STAFF },
   { item: "Activity Log", link: "/activity", icon: ScrollText, section: "work", roles: ["admin"] },

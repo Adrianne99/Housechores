@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import axios from "axios";
 import { Menu, X, Home } from "lucide-react";
 import { menu_for_role, MENU_SECTIONS } from "@/constants/navigation";
+import { useShift } from "@/context/shift_context";
 import { AppContext } from "@/context/app_context";
 import { H2, H5, H6 } from "./texts";
 import { Button } from "./buttons";
@@ -64,7 +65,11 @@ const Navigation = ({ dashboard = false }) => {
 
   const isDashboardRoute = dashboard && !!userData;
 
+  const shift = useShift();
   const logout = async () => {
+    setOpen(false);
+    // Asks "Time out too?" when the user is still timed in.
+    if (shift) return shift.requestLogout();
     try {
       const { data } = await axios.get(`/api/auth/logout`);
       if (data.success) {

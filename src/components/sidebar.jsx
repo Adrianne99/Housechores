@@ -8,6 +8,7 @@ import Toast from "@/components/toast";
 import { LogOut } from "lucide-react";
 import { menu_for_role, MENU_SECTIONS } from "@/constants/navigation";
 import { useNotifications } from "@/context/notification_context";
+import { useShift } from "@/context/shift_context";
 import { cn } from "@/utils/utils";
 import Tooltip from "./tooltip";
 
@@ -74,8 +75,11 @@ const Sidebar = () => {
   const unread = useNotifications()?.unread ?? 0;
   const count_for = (item) => (item.badge === "notifications" ? unread : 0);
 
+  const shift = useShift();
   const logout = async (e) => {
     if (e) e.preventDefault();
+    // Asks "Time out too?" when the user is still timed in.
+    if (shift) return shift.requestLogout();
     try {
       const { data } = await axios.get(`/api/auth/logout`);
       if (data.success) {
