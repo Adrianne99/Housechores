@@ -1,8 +1,8 @@
-import { X, User, Store, Clock, XCircle } from "lucide-react";
+import { X, User, Store, Clock, XCircle, RotateCcw } from "lucide-react";
 import { Button } from "../buttons";
 import { StatusBadge } from "../badge";
 
-export const OrderDetailModal = ({ open, onClose, order, canVoid, onVoid }) => {
+export const OrderDetailModal = ({ open, onClose, order, canVoid, onVoid, onRefund }) => {
   if (!open || !order) return null;
 
   const formattedDate = new Date(order.createdAt).toLocaleString("en-PH", {
@@ -123,17 +123,19 @@ export const OrderDetailModal = ({ open, onClose, order, canVoid, onVoid }) => {
               <span className="tabular-nums">₱{order.subtotal.toFixed(2)}</span>
             </div>
 
-            {order.discount?.amount > 0 && (
+            {order.discount_amount > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>
-                  Discount ({order.discount.type}
-                  {order.discount.id_number
-                    ? ` · ${order.discount.id_number}`
-                    : ""}
-                  )
+                  Discount ({order.discount?.type ?? "manual"}
+                  {order.discount?.id_number ? ` · ${order.discount.id_number}` : ""})
+                  {order.discount?.approved_by_name && (
+                    <span className="block text-[11px] text-gray-400">
+                      approved by {order.discount.approved_by_name}
+                    </span>
+                  )}
                 </span>
                 <span className="tabular-nums">
-                  -₱{order.discount.amount.toFixed(2)}
+                  -₱{order.discount_amount.toFixed(2)}
                 </span>
               </div>
             )}
@@ -152,6 +154,30 @@ export const OrderDetailModal = ({ open, onClose, order, canVoid, onVoid }) => {
               </span>
             </div>
           </div>
+
+          {/* Refunds */}
+          {order.refunds?.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Refunds · ₱{order.refunded_amount.toFixed(2)}
+              </p>
+              {order.refunds.map((r) => (
+                <div key={r._id} className="bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 text-xs">
+                  <div className="flex justify-between font-semibold text-orange-800">
+                    <span>{new Date(r.at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}</span>
+                    <span>−₱{r.amount.toFixed(2)} ({r.method})</span>
+                  </div>
+                  <p className="text-orange-700 mt-0.5">
+                    {r.items.map((i) => `${i.quantity}× ${i.name}${i.restocked ? "" : " (not restocked)"}`).join(", ")}
+                  </p>
+                  <p className="text-orange-600 mt-0.5">
+                    "{r.reason}" · by {r.by_name}
+                    {r.approved_by_name && r.approved_by_name !== r.by_name ? `, approved by ${r.approved_by_name}` : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Payment */}
           <div className="space-y-1 text-sm pt-2 border-t border-gray-100">
@@ -182,6 +208,12 @@ export const OrderDetailModal = ({ open, onClose, order, canVoid, onVoid }) => {
           >
             Close
           </Button>
+          {onRefund && ["completed", "partially_refunded"].includes(order.status) && (
+            <Button variant="secondary" size="md" className="w-full" onClick={() => onRefund(order)}>
+              <RotateCcw size={14} />
+              Refund
+            </Button>
+          )}
           {canVoid && order.status === "completed" && (
             <Button
               variant="danger"

@@ -8,6 +8,7 @@ import { useOrders } from "../hooks/use_orders";
 import { StatusBadge } from "./badge";
 import { OrderDetailModal } from "../components/_modal/order_detail_modal";
 import { VoidModal } from "../components/_modal/void_modal";
+import { RefundModal } from "../components/_modal/refund_modal";
 
 export const OrderHistoryTable = ({ title = "Order History" }) => {
   const { userData } = useContext(AppContext);
@@ -44,9 +45,23 @@ export const OrderHistoryTable = ({ title = "Order History" }) => {
   const totalPages = Math.max(1, Math.ceil(total / filters.limit));
   const colCount = canViewAllBranches ? 9 : 8;
 
+  const [refundOrder, setRefundOrder] = useState(null);
+
+  // The void response isn't populated, so keep the names we already have.
   const handleVoidSuccess = (updatedOrder) => {
+    setDetailOrder({
+      ...voidOrder,
+      ...updatedOrder,
+      branch: voidOrder?.branch,
+      cashier: voidOrder?.cashier,
+    });
     setVoidOrder(null);
-    setDetailOrder(updatedOrder); // show updated order with voided status
+    triggerRefresh();
+  };
+
+  const handleRefundSuccess = (updatedOrder) => {
+    setRefundOrder(null);
+    setDetailOrder(updatedOrder);
     triggerRefresh();
   };
 
@@ -85,6 +100,7 @@ export const OrderHistoryTable = ({ title = "Order History" }) => {
             <option value="">All statuses</option>
             <option value="completed">Completed</option>
             <option value="voided">Voided</option>
+            <option value="partially_refunded">Partly refunded</option>
             <option value="refunded">Refunded</option>
           </select>
 
@@ -275,7 +291,16 @@ export const OrderHistoryTable = ({ title = "Order History" }) => {
           setVoidOrder(o);
           setDetailOrder(null);
         }}
+        onRefund={(o) => setRefundOrder(o)}
       />
+
+      {refundOrder && (
+        <RefundModal
+          order={refundOrder}
+          onClose={() => setRefundOrder(null)}
+          onSuccess={handleRefundSuccess}
+        />
+      )}
 
       <VoidModal
         open={!!voidOrder}

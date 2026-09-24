@@ -39,9 +39,13 @@ export const StatusBadge = ({ status }) => {
     completed: "bg-green-100 text-green-700",
     voided: "bg-gray-100 text-gray-500",
     refunded: "bg-orange-100 text-orange-700",
+    partially_refunded: "bg-amber-100 text-amber-700",
   };
 
-  const label = status?.charAt(0).toUpperCase() + status?.slice(1);
+  const label =
+    status === "partially_refunded"
+      ? "Part. refunded"
+      : status?.charAt(0).toUpperCase() + status?.slice(1);
 
   return (
     <span

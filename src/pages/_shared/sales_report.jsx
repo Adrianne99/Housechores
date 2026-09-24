@@ -98,6 +98,8 @@ export default function SalesReport() {
               </div>
               <div className="pt-2">
                 <Row label="Voided" value={`${s.voided.count} · ${peso(s.voided.total)}`} muted={!s.voided.count} />
+                <Row label="Refunds" value={`${s.refunds?.count ?? 0} · −${peso(s.refunds?.total)}`} muted={!s.refunds?.count} />
+                <Row label="Net after refunds" value={peso(s.net_after_refunds ?? s.net)} strong />
                 <Row label="First sale" value={time_of(s.first_sale)} />
                 <Row label="Last sale" value={time_of(s.last_sale)} />
               </div>
