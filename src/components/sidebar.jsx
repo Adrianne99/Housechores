@@ -6,12 +6,13 @@ import logo from "@/assets/logo.png";
 import { H6, Paragraph } from "./texts";
 import Toast from "@/components/toast";
 import { LogOut } from "lucide-react";
-import { menu_for_role } from "@/constants/navigation";
+import { menu_for_role, MENU_SECTIONS } from "@/constants/navigation";
+import { useNotifications } from "@/context/notification_context";
 import { cn } from "@/utils/utils";
 import Tooltip from "./tooltip";
 
 // Reusable Nav Component
-const NavItem = ({ item, link, icon: Icon, onClick, pathname }) => (
+const NavItem = ({ item, link, icon: Icon, onClick, pathname, count = 0 }) => (
   <Link
     to={link}
     onClick={onClick}
@@ -23,7 +24,10 @@ const NavItem = ({ item, link, icon: Icon, onClick, pathname }) => (
     )}
   >
     <Tooltip text={item} position="right">
-      <div className="flex items-center gap-3">
+      <div className="relative flex items-center gap-3">
+        {count > 0 && (
+          <span className="absolute -top-1.5 left-3 lg:hidden size-2 rounded-full bg-red-500" />
+        )}
         <Icon
           size={20}
           className={cn(
@@ -44,6 +48,11 @@ const NavItem = ({ item, link, icon: Icon, onClick, pathname }) => (
         >
           {item}
         </Paragraph>
+        {count > 0 && (
+          <span className="hidden lg:flex ml-auto min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold items-center justify-center">
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
       </div>
     </Tooltip>
   </Link>
@@ -62,6 +71,8 @@ const Sidebar = () => {
 
   const role = userData?.role || "employee";
   const filteredItems = useMemo(() => menu_for_role(role), [role]);
+  const unread = useNotifications()?.unread ?? 0;
+  const count_for = (item) => (item.badge === "notifications" ? unread : 0);
 
   const logout = async (e) => {
     if (e) e.preventDefault();
@@ -86,30 +97,46 @@ const Sidebar = () => {
         <Toast {...toast} onClose={() => setToast({ ...toast, show: false })} />
       )}
 
-      <div className="px-2 mb-10 flex justify-center lg:justify-start">
+      <div className="px-2 mb-6 flex justify-center lg:justify-start">
         <img src={logo} alt="Logo" className="w-32 lg:block hidden" />
         <div className="lg:hidden block size-10 bg-primary/10 rounded-lg" />
       </div>
 
-      <nav className="flex-1">
-        <H6 className="px-4 mb-2 text-primary hidden lg:block text-[10px] uppercase tracking-widest">
-          Main Menu
-        </H6>
-        {filteredItems
-          .filter((i) => i.section === "main")
-          .map((item) => (
-            <NavItem key={item.item} {...item} pathname={pathname} />
-          ))}
+      <nav className="flex-1 overflow-y-auto -mx-1 px-1">
+        {MENU_SECTIONS.filter((sec) => sec.key !== "workspace").map((sec) => {
+          const items = filteredItems.filter((i) => i.section === sec.key);
+          if (items.length === 0) return null;
+          return (
+            <div key={sec.key} className="mb-3">
+              <H6 className="px-4 mb-1 text-primary hidden lg:block text-[10px] uppercase tracking-widest">
+                {sec.labels?.[role] ?? sec.label}
+              </H6>
+              {items.map((item) => (
+                <NavItem
+                  key={item.item}
+                  {...item}
+                  pathname={pathname}
+                  count={count_for(item)}
+                />
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="pt-4 border-t border-neutral-100">
         <H6 className="px-4 mb-2 text-primary hidden lg:block text-[10px] uppercase tracking-widest">
-          Workspace
+          Account
         </H6>
         {filteredItems
           .filter((i) => i.section === "workspace")
           .map((item) => (
-            <NavItem key={item.item} {...item} pathname={pathname} />
+            <NavItem
+              key={item.item}
+              {...item}
+              pathname={pathname}
+              count={count_for(item)}
+            />
           ))}
         <NavItem
           item="Logout"

@@ -2,7 +2,7 @@ import { useState, useEffect, useContext, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import axios from "axios";
 import { Menu, X, Home } from "lucide-react";
-import { menu_for_role } from "@/constants/navigation";
+import { menu_for_role, MENU_SECTIONS } from "@/constants/navigation";
 import { AppContext } from "@/context/app_context";
 import { H2, H5, H6 } from "./texts";
 import { Button } from "./buttons";
@@ -86,12 +86,13 @@ const Navigation = ({ dashboard = false }) => {
 
   const groupedItems = useMemo(() => {
     return nav_dashboard_items.reduce((acc, item) => {
-      const category = item.section === "workspace" ? "Workspace" : "Menu";
+      const sec = MENU_SECTIONS.find((s) => s.key === item.section);
+      const category = sec?.labels?.[userData?.role] ?? sec?.label ?? "Menu";
       if (!acc[category]) acc[category] = [];
       acc[category].push(item);
       return acc;
     }, {});
-  }, [nav_dashboard_items]);
+  }, [nav_dashboard_items, userData?.role]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";

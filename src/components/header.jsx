@@ -1,50 +1,32 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
+import { Link } from "react-router";
 import { AppContext } from "../context/app_context";
 import { H3, H5, Paragraph } from "./texts";
-import { Bell, Search } from "lucide-react";
-import { TextInput } from "./input";
+import { NotificationBell } from "./notification_bell";
+import { ROLE_LABELS, initials } from "../utils/format";
 
-const Header = ({ title }) => {
+const Header = ({ title, subtitle }) => {
   const { userData } = useContext(AppContext);
 
-  const formatRole = (role) => {
-    const map = {
-      admin: "Admin",
-      branch_manager: "Branch Manager",
-      employee: "Employee",
-    };
-    return map[role] ?? "Loading...";
-  };
-
   return (
-    <div className="w-full flex justify-between items-center gap-6">
-      <H3 className="whitespace-nowrap leading-tight">{title}</H3>
-      <div className="flex flex-1 items-center justify-end gap-3">
-        <div className="relative w-full max-w-md">
-          <TextInput
-            className="bg-white text-sm w-full pl-10 h-10 mb-1 border-none shadow-sm rounded-lg"
-            placeholder="Search"
-          />
-          <div className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400">
-            <Search size={18} />
+    <div className="w-full flex flex-wrap justify-between items-center gap-3">
+      <div className="min-w-0">
+        <H3 className="leading-tight truncate">{title}</H3>
+        {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+      </div>
+      <div className="flex items-center justify-end gap-3 ml-auto">
+        <NotificationBell />
+        <Link to="/profile" className="flex items-center gap-2" aria-label="My profile">
+          <div className="size-10 rounded-xl bg-linear-to-br from-indigo-500 to-purple-500 text-white font-bold text-sm flex items-center justify-center shadow-sm">
+            {initials(userData?.name)}
           </div>
-        </div>
-
-        <button className="bg-white shadow-sm size-10 flex items-center justify-center rounded-xl">
-          <Bell size={20} color="#4239C4" />
-        </button>
-        <div className="flex justify-start items-center">
-          <div className="size-10 bg-white shadow-sm rounded-xl"></div>
-          <div className="text-black capitalize px-1 flex flex-col items-start justify-start">
-            <H5>{userData?.name ?? `Loading...`}</H5>
-            <Paragraph
-              variant="muted"
-              className="text-start text-primary font-medium"
-            >
-              {formatRole(userData?.role) ?? `Loading...`}
+          <div className="hidden sm:flex text-black px-1 flex-col items-start">
+            <H5>{userData?.name ?? "Loading..."}</H5>
+            <Paragraph variant="muted" className="text-start text-primary font-medium">
+              {ROLE_LABELS[userData?.role] ?? "Loading..."}
             </Paragraph>
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   );

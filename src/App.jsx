@@ -13,6 +13,7 @@ import { AppContext, AppContextProvider } from "./context/app_context";
 import { useIsMobile } from "./hooks/use_is_mobile";
 import Sidebar from "./components/sidebar";
 import Navigation from "./components/navbar";
+import { NotificationProvider } from "./context/notification_context";
 
 // Pages are code-split so each role only downloads what it uses.
 // ─── Public ──────────────────────────────────────────────────
@@ -55,9 +56,12 @@ const MobileProfile = lazy(() => import("./pages/profile/mobile_profile"));
 const DesktopProfile = lazy(() => import("./pages/profile/desktop_profile"));
 const Edit_profile = lazy(() => import("./pages/profile/edit_profile"));
 
-// Employee reuses the dashboard component (stats are scoped server-side
-// to the employee's own sales) until a dedicated one is built.
-const EmployeeDashboard = AdminDashboard;
+const EmployeeDashboard = lazy(() => import("./pages/employee/employee_dashboard"));
+const TimeClock = lazy(() => import("./pages/_shared/time_clock"));
+const SalesReport = lazy(() => import("./pages/_shared/sales_report"));
+const StockAlerts = lazy(() => import("./pages/_shared/stock_alerts"));
+const NotificationsPage = lazy(() => import("./pages/_shared/notifications"));
+const ActivityLog = lazy(() => import("./pages/admin/activity_log"));
 
 const PageLoader = () => (
   <div className="h-screen flex items-center justify-center text-sm text-gray-400">
@@ -94,12 +98,13 @@ const App_layout = () => (
 );
 
 const Dashboard_layout = () => (
+  <NotificationProvider>
   <div className="flex w-full min-h-screen font-inter overflow-x-hidden">
-    <div className="hidden md:block z-100">
+    <div className="hidden md:block z-100 print:hidden">
       <Sidebar />
     </div>
     {/* Only the top bar area — a full-screen wrapper here blocked taps. */}
-    <div className="md:hidden fixed inset-x-0 top-0 z-50">
+    <div className="md:hidden fixed inset-x-0 top-0 z-50 print:hidden">
       <Navigation dashboard />
     </div>
     <div className="flex flex-col flex-1 min-w-0 pt-12 md:pt-0">
@@ -121,6 +126,7 @@ const Dashboard_layout = () => (
       </main>
     </div>
   </div>
+  </NotificationProvider>
 );
 
 const Guest_layout = () => (
@@ -213,6 +219,9 @@ const router = createBrowserRouter(
             />
             <Route path="/admin/pos" element={<Pos />} />
             <Route path="/admin/history" element={<AdminOrderHistory />} />
+            <Route path="/admin/sales-report" element={<SalesReport />} />
+            <Route path="/admin/activity" element={<ActivityLog />} />
+            <Route path="/admin/notifications" element={<NotificationsPage />} />
           </Route>
         </Route>
 
@@ -240,6 +249,13 @@ const router = createBrowserRouter(
               path="/branch_manager/history"
               element={<ManagerOrderHistory />}
             />
+            <Route path="/branch_manager/sales-report" element={<SalesReport />} />
+            <Route path="/branch_manager/stock-alerts" element={<StockAlerts />} />
+            <Route path="/branch_manager/time-clock" element={<TimeClock />} />
+            <Route
+              path="/branch_manager/notifications"
+              element={<NotificationsPage />}
+            />
           </Route>
         </Route>
 
@@ -255,6 +271,10 @@ const router = createBrowserRouter(
               path="/employee/history"
               element={<EmployeeOrderHistory />}
             />
+            <Route path="/employee/sales-report" element={<SalesReport />} />
+            <Route path="/employee/stock-alerts" element={<StockAlerts />} />
+            <Route path="/employee/time-clock" element={<TimeClock />} />
+            <Route path="/employee/notifications" element={<NotificationsPage />} />
           </Route>
         </Route>
 
