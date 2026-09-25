@@ -151,6 +151,7 @@ export default function Receiving() {
           unit_cost: Number(l.unit_cost),
           selling_price: l.selling_price,
           receipt_name: l.receipt_name,
+          expiry_date: l.expiry_date || undefined,
         })),
       });
       setSaved(data.delivery);
@@ -281,13 +282,14 @@ export default function Receiving() {
             <EmptyState>Search or scan products above to add them to this delivery.</EmptyState>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[620px] text-sm">
+              <table className="w-full min-w-[760px] text-sm">
                 <thead>
                   <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-100">
                     <th className="py-2 font-medium">Product</th>
                     <th className="py-2 font-medium">Stock</th>
                     <th className="py-2 font-medium w-24">Qty</th>
                     <th className="py-2 font-medium w-28">Unit cost</th>
+                    <th className="py-2 font-medium w-36">Expiry <span className="normal-case font-normal text-gray-400">(optional)</span></th>
                     <th className="py-2 font-medium text-right">Line total</th>
                     <th className="py-2" />
                   </tr>
@@ -322,6 +324,9 @@ export default function Receiving() {
                         </td>
                         <td className="py-2">
                           <input type="number" min={0} step="0.01" inputMode="decimal" aria-label={`Unit cost of ${l.name}`} value={l.unit_cost} onChange={(e) => set_line(l.inventory_id, "unit_cost", e.target.value)} className="w-24 px-2 py-1.5 border border-gray-200 rounded-md" />
+                        </td>
+                        <td className="py-2">
+                          <input type="date" aria-label={`Expiry date of ${l.name}`} value={l.expiry_date ?? ""} onChange={(e) => set_line(l.inventory_id, "expiry_date", e.target.value)} className="w-36 px-2 py-1.5 border border-gray-200 rounded-md text-xs" />
                         </td>
                         <td className="py-2 text-right tabular-nums">{peso((c(l.unit_cost) * q) / 100)}</td>
                         <td className="py-2 text-right">

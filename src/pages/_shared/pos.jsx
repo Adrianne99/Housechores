@@ -20,7 +20,10 @@ import { useHeldOrders, refresh_held, drop_held } from "../../hooks/use_held_ord
 import { queryClient } from "../../lib/query";
 import { ROLE_PREFIX } from "../../constants/navigation";
 import { Link } from "react-router";
-import { Wallet } from "lucide-react";
+import { CloudOff, RefreshCw, Store, Wallet } from "lucide-react";
+import { useBranches } from "../../hooks/use_branches";
+import { useOfflineSales } from "../../hooks/use_settings";
+import { discard, set_offline_user, sync } from "../../lib/offline_sales";
 
 export default function POSPage() {
   const {
@@ -38,10 +41,18 @@ export default function POSPage() {
     isEmpty,
   } = useCart();
 
-  const { allProducts, findByBarcode, search, loading } = useProductLookup();
-
   const searchInputRef = useRef(null);
   const { userData } = useContext(AppContext);
+  const is_admin = userData?.role === "admin";
+  // Admins sell from one branch at a time (their stock, their receipts).
+  const branches = useBranches({ enabled: is_admin });
+  const [branchChoice, setBranchChoice] = useState("");
+  const branch = is_admin ? branchChoice || branches[0]?._id || "" : undefined;
+  const { allProducts, findByBarcode, search, loading } = useProductLookup(branch, { enabled: !is_admin || !!branch });
+  const offline = useOfflineSales();
+  set_offline_user(userData?._id);
+  const my_pending = offline.pending.filter((p) => !p.owner || p.owner === String(userData?._id));
+  const failed = my_pending.filter((p) => p.error);
   // Custom (price-typed) items are manager/admin only — see permissions.js
   const canAddCustom = ["admin", "branch_manager"].includes(userData?.role);
   const drawer = useDrawer();
@@ -211,7 +222,7 @@ export default function POSPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [isEmpty, anyModalOpen, canAddCustom]);
 
-  if (loading && allProducts.length === 0) {
+  if (loading && allProducts.length === 0 && (!is_admin || branch)) {
     return (
       <div className="relative w-full space-y-12 pt-3">
         <Header title="POS Terminal" />
@@ -226,12 +237,67 @@ export default function POSPage() {
     <div className="relative w-full pt-3">
       <Header title="POS Terminal" />
 
+      {is_admin && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm bg-white border border-gray-200 rounded-xl px-4 py-2">
+          <Store size={16} className="text-indigo-600" />
+          <label htmlFor="pos-branch" className="text-gray-600">Selling from</label>
+          <select
+            id="pos-branch"
+            value={branch}
+            onChange={(e) => {
+              if (!isEmpty && !window.confirm("Switching branch clears the cart. Continue?")) return;
+              handleClearCart();
+              setBranchChoice(e.target.value);
+            }}
+            className="px-2 py-1 text-sm font-semibold border border-gray-200 rounded-lg bg-white"
+          >
+            {branches.map((b) => (
+              <option key={b._id} value={b._id}>{b.name}</option>
+            ))}
+          </select>
+          <span className="text-xs text-gray-400">Stock and the sale are recorded at this branch.</span>
+        </div>
+      )}
+
+      {/* Internet down / sales waiting to be sent */}
+      {(!offline.online || my_pending.length > 0) && (
+        <div
+          role="status"
+          className={`mt-4 flex flex-wrap items-center gap-2 text-sm rounded-xl px-4 py-2.5 border ${
+            !offline.online ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"
+          }`}
+        >
+          <CloudOff size={16} />
+          {!offline.online
+            ? "You're offline. Keep selling — sales are saved on this device and sent when the internet is back."
+            : `${my_pending.length - failed.length} offline sale(s) waiting to be sent.`}
+          {!offline.online && my_pending.length > 0 && <b>{my_pending.length} saved.</b>}
+          {offline.online && my_pending.length - failed.length > 0 && (
+            <button type="button" onClick={() => sync()} disabled={offline.syncing} className="ml-auto flex items-center gap-1 font-semibold underline disabled:opacity-50">
+              <RefreshCw size={14} className={offline.syncing ? "animate-spin" : ""} /> {offline.syncing ? "Sending..." : "Send now"}
+            </button>
+          )}
+        </div>
+      )}
+      {failed.map((p) => (
+        <div key={p.client_ref} className="mt-2 flex flex-wrap items-center gap-2 text-sm rounded-xl px-4 py-2.5 border bg-red-50 border-red-200 text-red-800">
+          ⚠ An offline sale of ₱{Number(p.total).toFixed(2)} ({new Date(p.created_at).toLocaleTimeString("en-PH")}) couldn't be saved: {p.error}
+          <button
+            type="button"
+            onClick={() => window.confirm("Remove this unsaved sale? Make sure it's recorded another way.") && discard(p.client_ref)}
+            className="ml-auto font-semibold underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      ))}
+
       {/* Cash drawer status: cash sales need an open drawer */}
       {!drawer.loading && userData?.role !== "admin" && (
         drawer.session ? (
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-2">
             <Wallet size={14} /> Drawer open · expected cash{" "}
-            <span className="font-semibold">₱{drawer.summary?.expected_cash?.toFixed(2)}</span>
+            <span className="font-semibold">₱{Number(drawer.summary?.expected_cash ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             <Link to={drawer_link} className="ml-auto font-semibold hover:underline">Manage drawer</Link>
           </div>
         ) : (
@@ -313,8 +379,10 @@ export default function POSPage() {
         onClose={() => setShowCharge(false)}
         total={totals.total}
         subtotal={totals.subtotal}
+        totals={totals}
         items={items}
         discount={discount}
+        branch={branch}
         onSuccess={handleSaleSuccess}
       />
 

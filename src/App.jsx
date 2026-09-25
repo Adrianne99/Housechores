@@ -39,6 +39,11 @@ const ManagerInventory = lazy(
 const Pos = lazy(() => import("./pages/_shared/pos"));
 const OrderHistory = lazy(() => import("./pages/_shared/order_history"));
 const Schedule = lazy(() => import("./pages/_shared/schedule"));
+const Utang = lazy(() => import("./pages/_shared/utang"));
+const ProfitReport = lazy(() => import("./pages/_shared/profit_report"));
+const StockCount = lazy(() => import("./pages/_shared/stock_count"));
+const Transfers = lazy(() => import("./pages/_shared/transfers"));
+const StoreSettings = lazy(() => import("./pages/admin/store_settings"));
 const Profile = lazy(() => import("./pages/profile/desktop_profile"));
 
 const EmployeeDashboard = lazy(() => import("./pages/employee/employee_dashboard"));
@@ -202,6 +207,12 @@ const router = createBrowserRouter(
             <Route path="/admin/receiving" element={<Receiving />} />
             <Route path="/admin/attendance" element={<Attendance />} />
             <Route path="/admin/schedule" element={<Schedule />} />
+            <Route path="/admin/utang" element={<Utang />} />
+            <Route path="/admin/profit" element={<ProfitReport />} />
+            <Route path="/admin/stock-count" element={<StockCount />} />
+            <Route path="/admin/transfers" element={<Transfers />} />
+            <Route path="/admin/settings" element={<StoreSettings />} />
+            <Route path="/admin/stock-alerts" element={<StockAlerts />} />
             <Route path="/admin/suppliers" element={<Suppliers />} />
             <Route path="/admin/purchase-orders" element={<PurchaseOrders />} />
             <Route path="/admin/activity" element={<ActivityLog />} />
@@ -235,6 +246,10 @@ const router = createBrowserRouter(
             <Route path="/branch_manager/receiving" element={<Receiving />} />
             <Route path="/branch_manager/attendance" element={<Attendance />} />
             <Route path="/branch_manager/schedule" element={<Schedule />} />
+            <Route path="/branch_manager/utang" element={<Utang />} />
+            <Route path="/branch_manager/profit" element={<ProfitReport />} />
+            <Route path="/branch_manager/stock-count" element={<StockCount />} />
+            <Route path="/branch_manager/transfers" element={<Transfers />} />
             <Route path="/branch_manager/suppliers" element={<Suppliers />} />
             <Route path="/branch_manager/purchase-orders" element={<PurchaseOrders />} />
             <Route path="/branch_manager/stock-alerts" element={<StockAlerts />} />
@@ -262,6 +277,7 @@ const router = createBrowserRouter(
             <Route path="/employee/sales-report" element={<SalesReport />} />
             <Route path="/employee/cash-drawer" element={<CashDrawer />} />
             <Route path="/employee/stock-alerts" element={<StockAlerts />} />
+            <Route path="/employee/utang" element={<Utang />} />
             <Route path="/employee/time-clock" element={<TimeClock />} />
             <Route path="/employee/notifications" element={<NotificationsPage />} />
           </Route>

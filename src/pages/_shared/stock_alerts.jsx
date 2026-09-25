@@ -9,6 +9,7 @@ import { DashboardCard } from "../../components/card";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { useStockAlerts } from "../../hooks/use_stock_alerts";
 import { cn } from "../../utils/utils";
+import { ExpiringPanel } from "../../components/expiring_panel";
 
 const FILTERS = [
   { key: "all", label: "All alerts" },
@@ -178,6 +179,7 @@ export default function StockAlerts() {
           </div>
         )}
       </Panel>
+      <ExpiringPanel can_remove={is_manager} />
     </div>
   );
 }

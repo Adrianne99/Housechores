@@ -14,12 +14,12 @@ const ManagerInventory = () => (
       ],
       // Toolbar / actions
       can_add_product: true,
-      can_delete: true,
+      can_delete: false, // deleting products is admin-only
       can_switch_branch: false,
       show_export: true,
 
       // Table row controls
-      show_checkbox: true,
+      show_checkbox: false,
       show_actions: false,
       can_delete_row: false,
 

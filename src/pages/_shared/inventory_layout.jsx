@@ -107,12 +107,12 @@ const CARD_BUILDERS = {
     sign: "",
     title: "Total Products",
     value: new Set(
-      products.map((p) => String(p.product?._id ?? p.product ?? p._id)),
+      products.map((p) => String(p.product_id ?? p._id)),
     ).size,
   }),
   low_stock_alerts: (products) => ({
     sign: "",
-    title: "Low Stock Alerts",
+    title: "Needs Restock",
     value: products.filter(
       (p) =>
         (p.stock_management?.current_stock ?? 0) <=

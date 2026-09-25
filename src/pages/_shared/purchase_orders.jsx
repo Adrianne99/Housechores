@@ -41,6 +41,8 @@ const OrderCard = ({ po, is_admin, n8n }) => {
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
   const { data: products = [] } = useProducts(is_admin ? po.branch?._id : undefined, { enabled: draft });
+  const { data: sup_data } = useSuppliers({ enabled: draft });
+  const suppliers = (sup_data?.suppliers ?? []).filter((s) => s.name !== "Unassigned supplier");
 
   const dirty =
     notes !== (po.notes ?? "") ||
@@ -113,11 +115,29 @@ const OrderCard = ({ po, is_admin, n8n }) => {
       </div>
 
       <div className="px-5 py-4 space-y-3">
-        {!po.supplier?.email && draft && (
-          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            {po.supplier_name} has no email yet.{" "}
-            <Link to={`${prefix}/suppliers`} className="font-semibold underline">Add it in Suppliers</Link> to send this order.
-          </p>
+        {draft && (!po.supplier?.email || po.supplier_name === "Unassigned supplier") && (
+          <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex flex-wrap items-center gap-2">
+            <span>
+              {po.supplier_name === "Unassigned supplier"
+                ? "Choose who to order these from:"
+                : <>{po.supplier_name} has no email yet. Pick another supplier or <Link to={`${prefix}/suppliers`} className="font-semibold underline">add their email</Link>:</>}
+            </span>
+            <select
+              aria-label="Supplier for this order"
+              value=""
+              disabled={!!busy}
+              onChange={(e) => e.target.value && run("supplier", () => purchasing.update_order(po._id, { supplier_id: e.target.value }))}
+              className="px-2 py-1 text-xs border border-amber-300 rounded-md bg-white"
+            >
+              <option value="">Choose supplier…</option>
+              {suppliers.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {s.name}{s.email ? "" : " (no email)"}
+                </option>
+              ))}
+            </select>
+            <Link to={`${prefix}/suppliers`} className="font-semibold underline">New supplier</Link>
+          </div>
         )}
 
         <div className="overflow-x-auto">
@@ -298,6 +318,14 @@ export default function PurchaseOrders() {
   const q = usePurchaseOrders(current.statuses);
   const orders = q.data?.orders ?? [];
   const n8n = !!q.data?.n8n;
+  const unordered = q.data?.unordered_low_stock ?? [];
+  const [adding, setAdding] = useState(null);
+  const add_low = async () => {
+    setAdding("busy");
+    const r = await purchasing.add_low_stock();
+    setAdding(r.ok ? r.data.message : r.message);
+    setTab("draft");
+  };
 
   return (
     <div className="relative w-full space-y-6 pt-3 pb-12">
@@ -307,6 +335,25 @@ export default function PurchaseOrders() {
         {n8n ? <Zap size={16} /> : <Mail size={16} />}
         {n8n ? "Automation on: approved orders are sent through your n8n workflow." : "Approved orders are emailed directly to suppliers. Connect n8n to automate more."}
       </div>
+
+      {unordered.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+          <span>
+            <b>{unordered.length}</b> low-stock item(s) aren't on any order yet:{" "}
+            {unordered.slice(0, 4).map((i) => i.name).join(", ")}
+            {unordered.length > 4 ? "…" : ""}
+          </span>
+          <button
+            type="button"
+            onClick={add_low}
+            disabled={adding === "busy"}
+            className="ml-auto px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold disabled:opacity-50"
+          >
+            {adding === "busy" ? "Adding..." : "Add them to orders"}
+          </button>
+        </div>
+      )}
+      {adding && adding !== "busy" && <p className="text-sm text-green-700 bg-green-50 rounded-xl px-4 py-2">{adding}</p>}
 
       <div className="flex flex-wrap items-center gap-2">
         {TABS.map((t) => (

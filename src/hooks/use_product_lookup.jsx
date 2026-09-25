@@ -42,8 +42,9 @@ export const apply_sale_to_products = (order) => {
   );
 };
 
-export const useProductLookup = () => {
-  const { data: allProducts = [], isPending: loading, refetch } = useProducts();
+// branch_id: admins pick which branch the POS sells from.
+export const useProductLookup = (branch_id, options) => {
+  const { data: allProducts = [], isPending: loading, refetch } = useProducts(branch_id, options);
 
   // Find by barcode (exact match)
   const findByBarcode = useCallback(

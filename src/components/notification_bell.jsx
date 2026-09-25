@@ -10,6 +10,9 @@ import {
   Undo2,
   Info,
   CalendarDays,
+  BookUser,
+  ArrowLeftRight,
+  CalendarClock,
 } from "lucide-react";
 import { useNotifications } from "../context/notification_context";
 import { AppContext } from "../context/app_context";
@@ -29,6 +32,9 @@ const NOTIFICATION_STYLES = {
   discount: { icon: ReceiptText, tone: "bg-green-50 text-green-600" },
   drawer: { icon: AlertTriangle, tone: "bg-amber-50 text-amber-600" },
   schedule: { icon: CalendarDays, tone: "bg-indigo-50 text-indigo-600" },
+  credit: { icon: BookUser, tone: "bg-orange-50 text-orange-600" },
+  transfer: { icon: ArrowLeftRight, tone: "bg-indigo-50 text-indigo-600" },
+  expiry: { icon: CalendarClock, tone: "bg-red-50 text-red-600" },
   system: { icon: Info, tone: "bg-gray-100 text-gray-600" },
 };
 

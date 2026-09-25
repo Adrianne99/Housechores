@@ -10,6 +10,8 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { useContext } from "react";
+import { AppContext } from "../../context/app_context";
 import { H6 } from "../../components/texts";
 import { ChartCard, DashboardCard } from "../../components/card";
 import Header from "../../components/header";
@@ -21,6 +23,10 @@ const peso = (n) =>
     maximumFractionDigits: 2,
   });
 const num = (n) => Number(n ?? 0).toLocaleString("en-PH");
+// No sales last month → nothing to compare with (not "+100%").
+const vs_hint = (change) => (typeof change === "number" ? "vs last month" : "no sales last month to compare");
+
+const METHOD_LABELS = { cash: "Cash", gcash: "GCash", card: "Card", credit: "Utang" };
 
 const STATUS_STYLES = {
   completed: "bg-green-100 text-green-700",
@@ -47,6 +53,8 @@ const EmptyRow = ({ children }) => (
 
 const AdminDashboard = () => {
   const { stats, loading, error } = useDashboard();
+  const { userData } = useContext(AppContext);
+  const is_admin = userData?.role === "admin";
 
   const t = stats?.totals ?? {};
   const tr = stats?.trends ?? {};
@@ -58,21 +66,21 @@ const AdminDashboard = () => {
       sign: "₱",
       value: peso(t.total_sales),
       change: tr.sales_change,
-      hint: "vs last month",
+      hint: vs_hint(tr.sales_change),
       icon: <Wallet size={20} />,
     },
     {
       title: "Invoices / Receipts",
       value: num(t.order_count),
       change: tr.orders_change,
-      hint: "vs last month",
+      hint: vs_hint(tr.orders_change),
       icon: <Receipt size={20} />,
     },
     {
       title: "Products Sold",
       value: num(t.products_sold),
       change: tr.products_change,
-      hint: "vs last month",
+      hint: vs_hint(tr.products_change),
       icon: <ShoppingBag size={20} />,
     },
     {
@@ -96,17 +104,25 @@ const AdminDashboard = () => {
       icon: <Boxes size={20} />,
     },
     {
-      title: "Low Stock",
+      title: "Needs Restock",
       value: num(inv.low_stock),
-      hint: `${num(inv.out_of_stock)} out of stock`,
+      hint: `${num(inv.out_of_stock)} out of stock${is_admin && stats?.branches_count > 1 ? " · all branches" : ""}`,
       icon: <AlertTriangle size={20} />,
     },
-    {
-      title: "Branches",
-      value: num(stats?.branches_count),
-      hint: "active",
-      icon: <Store size={20} />,
-    },
+    is_admin
+      ? {
+          title: "Branches",
+          value: num(stats?.branches_count),
+          hint: "active",
+          icon: <Store size={20} />,
+        }
+      : {
+          title: "Today's Sales",
+          sign: "₱",
+          value: peso(tr.today_sales),
+          hint: `${num(tr.today_orders)} order(s) today`,
+          icon: <Store size={20} />,
+        },
   ];
 
   return (
@@ -177,7 +193,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Top products · Sales by branch · Payment methods */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+      <div className={`grid grid-cols-1 gap-3 ${is_admin ? "xl:grid-cols-3" : "xl:grid-cols-2"}`}>
         {/* Top products */}
         <Panel title="Top Products">
           {loading ? (
@@ -204,7 +220,8 @@ const AdminDashboard = () => {
           )}
         </Panel>
 
-        {/* Sales by branch */}
+        {/* Sales by branch (one branch for managers — not useful) */}
+        {is_admin && (
         <Panel title="Sales by Branch">
           {loading ? (
             <div className="h-32 bg-gray-50 rounded animate-pulse" />
@@ -237,6 +254,7 @@ const AdminDashboard = () => {
             <EmptyRow>No branch sales yet.</EmptyRow>
           )}
         </Panel>
+        )}
 
         {/* Payment methods */}
         <Panel title="Payment Methods">
@@ -251,7 +269,7 @@ const AdminDashboard = () => {
                 >
                   <span className="flex items-center gap-2 text-sm text-gray-700 capitalize">
                     <CreditCard size={15} className="text-indigo-400" />
-                    {p.method}
+                    {METHOD_LABELS[p.method] ?? p.method}
                   </span>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-slate-800">

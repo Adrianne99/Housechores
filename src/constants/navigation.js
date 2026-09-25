@@ -16,6 +16,11 @@ import {
   ClipboardList,
   Contact,
   CalendarDays,
+  BookUser,
+  PiggyBank,
+  ClipboardCheck,
+  ArrowLeftRight,
+  Settings,
 } from "lucide-react";
 
 // Map role → clean URL prefix
@@ -44,11 +49,15 @@ export const MENU_CONFIG = [
     section: "sales",
     roles: ALL,
   },
+  { item: "Utang", link: "/utang", icon: BookUser, section: "sales", roles: ALL },
+  { item: "Profit Report", link: "/profit", icon: PiggyBank, section: "sales", roles: ["admin", "branch_manager"] },
   { item: "Inventory", link: "/inventory", icon: Box, section: "stock", roles: ["admin", "branch_manager"] },
-  { item: "Stock Alerts", link: "/stock-alerts", icon: AlertTriangle, section: "stock", roles: STAFF },
+  { item: "Stock Alerts", link: "/stock-alerts", icon: AlertTriangle, section: "stock", roles: ALL },
   { item: "Purchase Orders", link: "/purchase-orders", icon: ClipboardList, section: "stock", roles: ["admin", "branch_manager"] },
   { item: "Receiving", link: "/receiving", icon: Truck, section: "stock", roles: ["admin", "branch_manager"] },
   { item: "Suppliers", link: "/suppliers", icon: Contact, section: "stock", roles: ["admin", "branch_manager"] },
+  { item: "Stock Count", link: "/stock-count", icon: ClipboardCheck, section: "stock", roles: ["admin", "branch_manager"] },
+  { item: "Transfers", link: "/transfers", icon: ArrowLeftRight, section: "stock", roles: ["admin", "branch_manager"] },
   {
     item: "Staff Management",
     link: "/staff-management",
@@ -69,6 +78,7 @@ export const MENU_CONFIG = [
     roles: ALL,
     badge: "notifications",
   },
+  { item: "Store Settings", link: "/settings", icon: Settings, section: "workspace", roles: ["admin"] },
   {
     item: "Profile",
     link: "/profile",
