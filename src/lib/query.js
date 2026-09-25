@@ -27,3 +27,12 @@ export const clear_session_cache = () => {
   queryClient.setQueryData(["me"], null);
   queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== "me" });
 };
+
+// A sale changed after the fact (refund / void): everything that shows
+// sales, stock or drawer cash is out of date. Visible screens refresh
+// quietly in the background; others refresh when next opened.
+export const refresh_after_order_change = () => {
+  for (const key of ["orders", "dashboard", "products", "drawer"]) {
+    queryClient.invalidateQueries({ queryKey: [key] });
+  }
+};

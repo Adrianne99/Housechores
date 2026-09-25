@@ -172,8 +172,12 @@ export default function EmployeeDashboard() {
     {
       title: "My sales today",
       sign: "₱",
-      value: peso(summary?.net).replace("₱", ""),
-      hint: summary?.discounts ? `${peso(summary.discounts)} in discounts` : "net of discounts",
+      value: peso(summary?.net_after_refunds ?? summary?.net).replace("₱", ""),
+      hint: summary?.refunds?.total
+        ? `after ${peso(summary.refunds.total)} in refunds`
+        : summary?.discounts
+          ? `${peso(summary.discounts)} in discounts`
+          : "net of discounts and refunds",
       icon: <Wallet size={20} />,
     },
     {

@@ -3,13 +3,16 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { get, error_message } from "../../lib/query";
 import { useBranches } from "../../hooks/use_branches";
 import {
+  BadgePercent,
   Boxes,
   CalendarClock,
   Package,
   ReceiptText,
+  RotateCcw,
   Store,
   Tag,
   Users,
+  Wallet,
 } from "lucide-react";
 import Header from "../../components/header";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
@@ -22,6 +25,9 @@ const CATEGORIES = [
   { key: "stock", label: "Stock", icon: Boxes },
   { key: "price", label: "Prices", icon: Tag },
   { key: "order", label: "Voids", icon: ReceiptText },
+  { key: "refund", label: "Refunds", icon: RotateCcw },
+  { key: "discount", label: "Discounts", icon: BadgePercent },
+  { key: "drawer", label: "Cash drawer", icon: Wallet },
   { key: "staff", label: "Staff", icon: Users },
   { key: "schedule", label: "Schedules", icon: CalendarClock },
   { key: "branch", label: "Branches", icon: Store },
@@ -31,6 +37,9 @@ const CATEGORY_TONE = {
   stock: "bg-sky-50 text-sky-600",
   price: "bg-amber-50 text-amber-600",
   order: "bg-red-50 text-red-600",
+  refund: "bg-orange-50 text-orange-600",
+  discount: "bg-green-50 text-green-600",
+  drawer: "bg-emerald-50 text-emerald-700",
   staff: "bg-purple-50 text-purple-600",
   schedule: "bg-teal-50 text-teal-600",
   branch: "bg-gray-100 text-gray-600",
@@ -48,8 +57,10 @@ const FIELD_LABELS = {
   stock: "Stock",
   reorder_level: "Reorder level",
   hourly_rate: "Hourly rate",
+  expected_cash: "Expected cash",
+  counted_cash: "Counted cash",
 };
-const MONEY_FIELDS = new Set(["selling_price", "cost_per_unit", "hourly_rate"]);
+const MONEY_FIELDS = new Set(["selling_price", "cost_per_unit", "hourly_rate", "expected_cash", "counted_cash"]);
 
 const fmt = (field, v) =>
   v === null || v === undefined || v === ""

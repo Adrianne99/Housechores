@@ -1,4 +1,6 @@
 import { useContext, useState } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { get as api_get } from "../../lib/query";
 import { Printer, Receipt, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
 import Header from "../../components/header";
 import { DashboardCard } from "../../components/card";
@@ -27,6 +29,13 @@ export default function SalesReport() {
   const { userData } = useContext(AppContext);
   const [date, setDate] = useState(today_local());
   const { summary: s, loading, error } = useSalesSummary(date);
+  // Every refund processed on this day (same role scoping as the summary).
+  const refunds_q = useQuery({
+    queryKey: ["orders", "refunds", date],
+    queryFn: () => api_get("/api/orders/refunds", { date }),
+    placeholderData: keepPreviousData,
+  });
+  const refunds = refunds_q.data?.refunds ?? [];
   const is_employee = userData?.role === "employee";
   const scope = is_employee
     ? "Your own sales"
@@ -74,7 +83,7 @@ export default function SalesReport() {
       {error && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-lg">⚠ {error}</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <DashboardCard title="Net sales" value={peso(s?.net)} loading={loading} icon={<Wallet size={20} />} hint="after discounts" />
+        <DashboardCard title="Net sales" value={peso(s?.net_after_refunds ?? s?.net)} loading={loading} icon={<Wallet size={20} />} hint={s?.refunds?.total ? `after ${peso(s.refunds.total)} in refunds` : "after discounts and refunds"} />
         <DashboardCard title="Transactions" value={num(s?.transactions)} loading={loading} icon={<Receipt size={20} />} hint={s?.voided?.count ? `${s.voided.count} voided` : "completed"} />
         <DashboardCard title="Items sold" value={num(s?.items_sold)} loading={loading} icon={<ShoppingBag size={20} />} hint="units" />
         <DashboardCard title="Average sale" value={peso(s?.average_sale)} loading={loading} icon={<TrendingUp size={20} />} hint="per transaction" />
@@ -167,6 +176,58 @@ export default function SalesReport() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </Panel>
+      <Panel title={`Refunds${refunds.length ? ` · ${refunds.length} · −${peso(refunds_q.data.total)}` : ""}`}>
+        {refunds_q.isPending ? (
+          <Skeleton rows={3} />
+        ) : refunds.length === 0 ? (
+          <EmptyState>No refunds on this day.</EmptyState>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                  <th className="py-2 font-medium">Time</th>
+                  <th className="py-2 font-medium">Order</th>
+                  <th className="py-2 font-medium">Items returned</th>
+                  <th className="py-2 font-medium">Reason</th>
+                  <th className="py-2 font-medium">By / approved by</th>
+                  <th className="py-2 font-medium text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {refunds.map((r) => (
+                  <tr key={r._id} className="align-top">
+                    <td className="py-2.5 text-gray-600 whitespace-nowrap">{time_of(r.at)}</td>
+                    <td className="py-2.5">
+                      <p className="font-medium text-gray-900">{r.order_number}</p>
+                      {!is_employee && r.branch && <p className="text-xs text-gray-400">{r.branch}</p>}
+                    </td>
+                    <td className="py-2.5 text-gray-700">
+                      {r.items.map((i, n) => (
+                        <p key={n}>
+                          {i.quantity}× {i.name}
+                          {!i.restocked && <span className="text-xs text-amber-600"> · not restocked</span>}
+                        </p>
+                      ))}
+                    </td>
+                    <td className="py-2.5 text-gray-600">{r.reason}</td>
+                    <td className="py-2.5 text-gray-600">
+                      {r.by_name}
+                      {r.approved_by_name && r.approved_by_name !== r.by_name && (
+                        <span className="block text-xs text-gray-400">approved by {r.approved_by_name}</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 text-right tabular-nums">
+                      <span className="font-semibold text-orange-600">−{peso(r.amount)}</span>
+                      <span className="block text-xs text-gray-400">{PAYMENT_LABELS[r.method] ?? r.method}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </Panel>

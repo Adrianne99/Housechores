@@ -1,5 +1,6 @@
 import { useContext, useState } from "react";
 import { useBranches } from "../hooks/use_branches";
+import { refresh_after_order_change } from "../lib/query";
 import { Eye, ChevronLeft, ChevronRight, Filter, X, Store } from "lucide-react";
 
 import Header from "../components/header";
@@ -46,12 +47,14 @@ export const OrderHistoryTable = ({ title = "Order History" }) => {
     });
     setVoidOrder(null);
     triggerRefresh();
+    refresh_after_order_change();
   };
 
   const handleRefundSuccess = (updatedOrder) => {
     setRefundOrder(null);
     setDetailOrder(updatedOrder);
     triggerRefresh();
+    refresh_after_order_change(); // dashboard, sales, stock and drawer update
   };
 
   return (

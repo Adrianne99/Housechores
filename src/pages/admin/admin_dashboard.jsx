@@ -26,6 +26,7 @@ const STATUS_STYLES = {
   completed: "bg-green-100 text-green-700",
   voided: "bg-red-100 text-red-600",
   refunded: "bg-amber-100 text-amber-700",
+  partially_refunded: "bg-amber-100 text-amber-700",
 };
 
 const Panel = ({ title, action, children }) => (
@@ -163,7 +164,7 @@ const AdminDashboard = () => {
                         STATUS_STYLES[o.status] ?? "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      {o.status}
+                      {o.status.replace("_", " ")}
                     </span>
                   </div>
                 </li>
