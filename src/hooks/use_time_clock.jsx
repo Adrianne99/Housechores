@@ -33,6 +33,8 @@ export const useTimeClock = ({ withLogs = false } = {}) => {
     busy: toggle.isPending,
     error: error_message(toggle.error || status.error || shifts.error),
     toggle: () => toggle.mutate(),
+    // For confirm dialogs: resolves when saved (errors surface via `error`).
+    toggleAsync: () => toggle.mutateAsync().catch(() => {}),
     refresh: refresh_time_clock,
   };
 };

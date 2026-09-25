@@ -4,6 +4,7 @@ import Header from "../../components/header";
 import { DashboardCard } from "../../components/card";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { useTimeClock } from "../../hooks/use_time_clock";
+import { ClockButton } from "../../components/clock_confirm";
 import { clock_label, date_of, hours_label, peso, time_of } from "../../utils/format";
 import { cn } from "../../utils/utils";
 
@@ -16,9 +17,8 @@ const elapsed = (from, now) => {
 
 export default function TimeClock() {
   const now = useNow();
-  const { status, shifts, todays_shift, logs, loading, busy, error, toggle } = useTimeClock({
-    withLogs: true,
-  });
+  const clock = useTimeClock({ withLogs: true });
+  const { status, shifts, todays_shift, logs, loading, error } = clock;
   const on_shift = !!status?.clocked_in;
 
   return (
@@ -59,18 +59,8 @@ export default function TimeClock() {
 
           {error && <p className="mt-3 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
 
-          <button
-            type="button"
-            onClick={toggle}
-            disabled={busy || loading}
-            className={cn(
-              "mt-5 w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold text-white transition-colors disabled:opacity-50",
-              on_shift ? "bg-red-500 hover:bg-red-600" : "bg-green-600 hover:bg-green-700",
-            )}
-          >
-            {on_shift ? <LogOut size={20} /> : <LogIn size={20} />}
-            {busy ? "Saving..." : on_shift ? "Clock out" : "Clock in"}
-          </button>
+          {/* Asks "Clock in/out now?" before saving */}
+          <ClockButton clock={clock} iconSize={20} className="mt-5 w-full rounded-xl py-3.5 text-base font-bold" />
         </section>
 
         {/* Stats + upcoming shifts */}

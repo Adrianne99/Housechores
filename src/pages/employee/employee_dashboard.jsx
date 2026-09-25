@@ -23,6 +23,7 @@ import Header from "../../components/header";
 import { DashboardCard } from "../../components/card";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { NotificationItem } from "../../components/notification_bell";
+import { ClockButton } from "../../components/clock_confirm";
 import { AppContext } from "../../context/app_context";
 import { useNotifications } from "../../context/notification_context";
 import { useTimeClock } from "../../hooks/use_time_clock";
@@ -41,14 +42,9 @@ import {
 } from "../../utils/format";
 import { cn } from "../../utils/utils";
 
-const greeting = () => {
-  const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-};
-
 // ─── Profile card ────────────────────────────────────────────
 const ProfileCard = ({ user, clock }) => {
-  const { status, todays_shift, busy, toggle, error } = clock;
+  const { status, todays_shift, error } = clock;
   const on_shift = !!status?.clocked_in;
   const branch_name = typeof user?.branch === "object" ? user.branch?.name : null;
 
@@ -120,18 +116,8 @@ const ProfileCard = ({ user, clock }) => {
         {error && <p className="mt-3 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
 
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={toggle}
-            disabled={busy || !status}
-            className={cn(
-              "flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50",
-              on_shift ? "bg-red-500 hover:bg-red-600" : "bg-green-600 hover:bg-green-700",
-            )}
-          >
-            {on_shift ? <LogOut size={16} /> : <LogIn size={16} />}
-            {busy ? "Saving..." : on_shift ? "Clock out" : "Clock in"}
-          </button>
+          {/* Asks "Clock in/out now?" before saving */}
+          <ClockButton clock={clock} className="rounded-xl py-2.5 text-sm" />
           <Link
             to="/employee/pos"
             className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold border border-indigo-200 text-indigo-700 hover:bg-indigo-50"
@@ -201,13 +187,11 @@ export default function EmployeeDashboard() {
     },
   ];
 
-  const first_name = userData?.name?.split(" ")[0] ?? "";
 
   return (
     <div className="relative w-full space-y-6 pt-3 pb-12">
       <Header
         title="Dashboard"
-        subtitle={`${greeting()}${first_name ? `, ${first_name}` : ""} 👋`}
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
