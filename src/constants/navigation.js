@@ -13,6 +13,8 @@ import {
   Wallet,
   Truck,
   CalendarCheck,
+  ClipboardList,
+  Contact,
 } from "lucide-react";
 
 // Map role → clean URL prefix
@@ -43,7 +45,9 @@ export const MENU_CONFIG = [
   },
   { item: "Inventory", link: "/inventory", icon: Box, section: "stock", roles: ["admin", "branch_manager"] },
   { item: "Stock Alerts", link: "/stock-alerts", icon: AlertTriangle, section: "stock", roles: STAFF },
+  { item: "Purchase Orders", link: "/purchase-orders", icon: ClipboardList, section: "stock", roles: ["admin", "branch_manager"] },
   { item: "Receiving", link: "/receiving", icon: Truck, section: "stock", roles: ["admin", "branch_manager"] },
+  { item: "Suppliers", link: "/suppliers", icon: Contact, section: "stock", roles: ["admin", "branch_manager"] },
   {
     item: "Staff Management",
     link: "/staff-management",
@@ -88,4 +92,12 @@ export const menu_for_role = (role) => {
     item: item.labels?.[role] ?? item.item,
     link: item.shared ? item.link : `${prefix}${item.link}`,
   }));
+};
+
+// Notification links are stored for one role (e.g. "/branch_manager/...");
+// point them at the current user's own pages.
+export const link_for_role = (link, role) => {
+  if (!link) return link;
+  const prefix = ROLE_PREFIX[role];
+  return prefix ? link.replace(/^\/(admin|branch_manager|employee)(?=\/)/, prefix) : link;
 };

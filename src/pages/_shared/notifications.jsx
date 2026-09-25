@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { AppContext } from "../../context/app_context";
 import { useNavigate } from "react-router";
 import { CheckCheck } from "lucide-react";
 import Header from "../../components/header";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { NotificationItem } from "../../components/notification_bell";
+import { link_for_role } from "../../constants/navigation";
 import { useNotifications } from "../../context/notification_context";
 import { cn } from "../../utils/utils";
 
@@ -11,11 +13,12 @@ const TABS = [
   { key: "all", label: "All" },
   { key: "unread", label: "Unread" },
   { key: "sales", label: "Sales", types: ["sale", "void"] },
-  { key: "stock", label: "Stock", types: ["low_stock", "out_of_stock", "restock_request"] },
+  { key: "stock", label: "Stock", types: ["low_stock", "out_of_stock", "restock_request", "purchase", "delivery"] },
 ];
 
 export default function NotificationsPage() {
   const ctx = useNotifications();
+  const { userData } = useContext(AppContext);
   const navigate = useNavigate();
   const [tab, setTab] = useState("all");
 
@@ -68,7 +71,7 @@ export default function NotificationsPage() {
                 n={n}
                 onOpen={(x) => {
                   markRead(x._id);
-                  if (x.link) navigate(x.link);
+                  if (x.link) navigate(link_for_role(x.link, userData?.role));
                 }}
               />
             ))}

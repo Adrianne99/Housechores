@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { AlertTriangle, Package, PackagePlus, PackageX, RefreshCw, Search } from "lucide-react";
 import { AppContext } from "../../context/app_context";
 import { ROLE_PREFIX } from "../../constants/navigation";
+import { purchasing } from "../../hooks/use_purchasing";
 import Header from "../../components/header";
 import { DashboardCard } from "../../components/card";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
@@ -23,6 +24,14 @@ export default function StockAlerts() {
   // Cashiers ask their manager; managers/admins receive the stock themselves.
   const is_manager = ["admin", "branch_manager"].includes(userData?.role);
   const receiving = `${ROLE_PREFIX[userData?.role] ?? ""}/receiving`;
+  const [ordered, setOrdered] = useState({}); // inventory_id → { ok, text }
+  const order_item = async (p) => {
+    const r = await purchasing.add_item(p._id);
+    setOrdered((o) => ({
+      ...o,
+      [p._id]: r.ok ? { ok: true, text: `On ${r.data.order.po_number}` } : { ok: false, text: r.message },
+    }));
+  };
 
   const out_count = alerts.filter((a) => a.level === "out").length;
   const shown = useMemo(() => {
@@ -125,6 +134,20 @@ export default function StockAlerts() {
                       <td className="py-2.5 text-gray-600">{p.stock_management.supplier || "—"}</td>
                       <td className="py-2.5 text-right">
                         {is_manager ? (
+                          <span className="inline-flex flex-wrap items-center justify-end gap-2">
+                          {ordered[p._id] ? (
+                            <span className={cn("text-xs font-medium", ordered[p._id].ok ? "text-green-600" : "text-amber-600")}>
+                              {ordered[p._id].text}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => order_item(p)}
+                              className="text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg px-2.5 py-1 hover:bg-indigo-50"
+                            >
+                              Order from supplier
+                            </button>
+                          )}
                           <Link
                             to={receiving}
                             state={{ product: p }}
@@ -132,6 +155,7 @@ export default function StockAlerts() {
                           >
                             <PackagePlus size={13} /> Receive stock
                           </Link>
+                          </span>
                         ) : r ? (
                           <span className={cn("text-xs font-medium", r.ok ? "text-green-600" : "text-red-500")}>
                             {r.ok ? "Manager notified ✓" : r.message}

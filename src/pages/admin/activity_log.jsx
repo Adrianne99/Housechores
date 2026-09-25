@@ -13,6 +13,7 @@ import {
   Tag,
   Users,
   Wallet,
+  Truck,
 } from "lucide-react";
 import Header from "../../components/header";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
@@ -28,6 +29,7 @@ const CATEGORIES = [
   { key: "refund", label: "Refunds", icon: RotateCcw },
   { key: "discount", label: "Discounts", icon: BadgePercent },
   { key: "drawer", label: "Cash drawer", icon: Wallet },
+  { key: "purchase", label: "Purchasing", icon: Truck },
   { key: "staff", label: "Staff", icon: Users },
   { key: "schedule", label: "Schedules", icon: CalendarClock },
   { key: "branch", label: "Branches", icon: Store },
@@ -40,6 +42,7 @@ const CATEGORY_TONE = {
   refund: "bg-orange-50 text-orange-600",
   discount: "bg-green-50 text-green-600",
   drawer: "bg-emerald-50 text-emerald-700",
+  purchase: "bg-amber-50 text-amber-700",
   staff: "bg-purple-50 text-purple-600",
   schedule: "bg-teal-50 text-teal-600",
   branch: "bg-gray-100 text-gray-600",

@@ -23,6 +23,7 @@ import Header from "../../components/header";
 import { DashboardCard } from "../../components/card";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { NotificationItem } from "../../components/notification_bell";
+import { link_for_role } from "../../constants/navigation";
 import { ClockButton } from "../../components/clock_confirm";
 import { AppContext } from "../../context/app_context";
 import { useNotifications } from "../../context/notification_context";
@@ -269,7 +270,7 @@ export default function EmployeeDashboard() {
                   compact
                   onOpen={(x) => {
                     notif.markRead(x._id);
-                    if (x.link) navigate(x.link);
+                    if (x.link) navigate(link_for_role(x.link, userData?.role));
                   }}
                 />
               ))}

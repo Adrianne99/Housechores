@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useNotifications } from "../context/notification_context";
 import { AppContext } from "../context/app_context";
-import { ROLE_PREFIX } from "../constants/navigation";
+import { ROLE_PREFIX, link_for_role } from "../constants/navigation";
 import { time_ago } from "../utils/format";
 import { cn } from "../utils/utils";
 
@@ -22,6 +22,11 @@ const NOTIFICATION_STYLES = {
   low_stock: { icon: AlertTriangle, tone: "bg-amber-50 text-amber-600" },
   out_of_stock: { icon: PackageX, tone: "bg-red-50 text-red-600" },
   restock_request: { icon: PackageSearch, tone: "bg-indigo-50 text-indigo-600" },
+  purchase: { icon: PackageSearch, tone: "bg-amber-50 text-amber-600" },
+  delivery: { icon: PackageSearch, tone: "bg-green-50 text-green-600" },
+  refund: { icon: Undo2, tone: "bg-orange-50 text-orange-600" },
+  discount: { icon: ReceiptText, tone: "bg-green-50 text-green-600" },
+  drawer: { icon: AlertTriangle, tone: "bg-amber-50 text-amber-600" },
   system: { icon: Info, tone: "bg-gray-100 text-gray-600" },
 };
 
@@ -72,7 +77,7 @@ export const NotificationBell = () => {
   const open_item = (n) => {
     markRead(n._id);
     setOpen(false);
-    if (n.link) navigate(n.link);
+    if (n.link) navigate(link_for_role(n.link, userData?.role));
   };
 
   return (

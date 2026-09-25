@@ -88,13 +88,11 @@ const Login = () => {
         } catch {
           // storage unavailable — no prompt
         }
+        // Setting the user is enough: AuthRoute redirects to the dashboard
+        // right away. (A delayed navigate here used to yank people back to
+        // the dashboard if they clicked somewhere within 1.5s of logging in.)
         setIsLoggedIn(true);
         setUserData(data.userData);
-        showToast("Login successful! Redirecting...");
-
-        setTimeout(() => {
-          navigate("/dashboard", { replace: true });
-        }, 1500);
       } else {
         showToast(data.message, "error");
       }

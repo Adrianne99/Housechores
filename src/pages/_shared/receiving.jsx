@@ -29,20 +29,38 @@ export default function Receiving() {
   // so the first line is ready immediately (no effect waiting on data).
   const { state: nav } = useLocation();
   const preset = nav?.product ?? null;
+  // "Receive delivery" on a purchase order: prefill what's still owed.
+  const po = nav?.purchase_order ?? null;
 
   const branches = useBranches({ enabled: is_admin });
-  const [branchChoice, setBranch] = useState(preset?.branch?._id ?? "");
+  const [branchChoice, setBranch] = useState(po?.branch?._id ?? preset?.branch?._id ?? "");
   const branch = branchChoice || branches[0]?._id || "";
   const { data: products = [], isPending: loadingProducts } = useProducts(
     is_admin ? branch : undefined,
     { enabled: !is_admin || !!branch },
   );
 
-  const [supplier, setSupplier] = useState(preset?.stock_management?.supplier ?? "");
-  const [reference, setReference] = useState("");
+  const [supplier, setSupplier] = useState(po?.supplier_name ?? preset?.stock_management?.supplier ?? "");
+  const [reference, setReference] = useState(po?.po_number ?? "");
+  const [poId, setPoId] = useState(po?._id ?? null);
   const [notes, setNotes] = useState("");
   const [updateCost, setUpdateCost] = useState(true);
-  const [lines, setLines] = useState(() => (preset ? [line_from(preset)] : [])); // { inventory_id, name, unit, current, quantity, unit_cost }
+  const [lines, setLines] = useState(() =>
+    po
+      ? po.items
+          .filter((i) => i.quantity > (i.received_qty ?? 0))
+          .map((i) => ({
+            inventory_id: i.inventory,
+            name: i.name,
+            unit: i.unit,
+            current: null,
+            quantity: i.quantity - (i.received_qty ?? 0),
+            unit_cost: i.unit_cost,
+          }))
+      : preset
+        ? [line_from(preset)]
+        : [],
+  ); // { inventory_id, name, unit, current, quantity, unit_cost }
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -68,6 +86,9 @@ export default function Receiving() {
     setSaved(null);
     searchRef.current?.focus();
   };
+
+  const cur = (l) =>
+    l.current ?? products.find((p) => p._id === l.inventory_id)?.stock_management.current_stock ?? null;
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -102,6 +123,7 @@ export default function Receiving() {
         reference,
         notes,
         update_cost: updateCost,
+        purchase_order_id: poId ?? undefined,
         items: lines.map((l) => ({
           inventory_id: l.inventory_id,
           quantity: Number(l.quantity),
@@ -109,6 +131,8 @@ export default function Receiving() {
         })),
       });
       setSaved(data.delivery);
+      setPoId(null);
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
       setLines([]);
       setReference("");
       setNotes("");
@@ -126,6 +150,11 @@ export default function Receiving() {
     <div className="relative w-full space-y-6 pt-3 pb-12">
       <Header title="Receiving" subtitle="Record supplier deliveries. Stock goes up and costs stay accurate." />
 
+      {poId && (
+        <p className="text-sm text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">
+          Receiving for purchase order <b>{reference}</b>. What's still owed is filled in — adjust to what actually arrived.
+        </p>
+      )}
       {saved && (
         <p className="text-sm text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
           ✓ Received {saved.total_units} unit(s) of {saved.items.length} product(s) from {saved.supplier} — {peso(saved.total_cost)}.
@@ -233,7 +262,7 @@ export default function Receiving() {
                       <tr key={l.inventory_id}>
                         <td className="py-2 font-medium text-gray-900">{l.name}</td>
                         <td className="py-2 text-xs text-gray-500 whitespace-nowrap">
-                          {l.current} → <span className="font-semibold text-green-600">{l.current + q}</span> {l.unit}
+                          {cur(l) ?? "—"} → <span className="font-semibold text-green-600">{cur(l) === null ? `+${q}` : cur(l) + q}</span> {l.unit}
                         </td>
                         <td className="py-2">
                           <input type="number" min={1} step={1} inputMode="numeric" aria-label={`Quantity of ${l.name}`} value={l.quantity} onChange={(e) => set_line(l.inventory_id, "quantity", e.target.value)} className="w-20 px-2 py-1.5 border border-gray-200 rounded-md" />
