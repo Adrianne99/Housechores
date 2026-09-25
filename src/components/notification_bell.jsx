@@ -9,6 +9,7 @@ import {
   ReceiptText,
   Undo2,
   Info,
+  CalendarDays,
 } from "lucide-react";
 import { useNotifications } from "../context/notification_context";
 import { AppContext } from "../context/app_context";
@@ -27,6 +28,7 @@ const NOTIFICATION_STYLES = {
   refund: { icon: Undo2, tone: "bg-orange-50 text-orange-600" },
   discount: { icon: ReceiptText, tone: "bg-green-50 text-green-600" },
   drawer: { icon: AlertTriangle, tone: "bg-amber-50 text-amber-600" },
+  schedule: { icon: CalendarDays, tone: "bg-indigo-50 text-indigo-600" },
   system: { icon: Info, tone: "bg-gray-100 text-gray-600" },
 };
 

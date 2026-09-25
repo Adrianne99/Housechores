@@ -21,15 +21,11 @@ import { ShiftProvider } from "./context/shift_context";
 const Login = lazy(() => import("./pages/auth/login"));
 const Register = lazy(() => import("./pages/auth/register"));
 const Reset_password = lazy(() => import("./pages/auth/reset_password"));
-const Email_verification = lazy(
-  () => import("./pages/auth/email_verification"),
-);
 
 // ─── Admin ───────────────────────────────────────────────────
 const AdminDashboard = lazy(() => import("./pages/admin/admin_dashboard"));
 const AdminInventory = lazy(() => import("./pages/admin/admin_inventory"));
 const StaffManagement = lazy(() => import("./pages/_shared/staff_management"));
-const AdminOrderHistory = lazy(() => import("./pages/admin/admin_history"));
 
 // ─── Manager ─────────────────────────────────────────────────
 const ManagerDashboard = lazy(
@@ -38,17 +34,11 @@ const ManagerDashboard = lazy(
 const ManagerInventory = lazy(
   () => import("./pages/manager/manager_inventory"),
 );
-const ManagerOrderHistory = lazy(
-  () => import("./pages/manager/manager_history"),
-);
-
-// ─── Employee ────────────────────────────────────────────────
-const EmployeeOrderHistory = lazy(
-  () => import("./pages/employee/order_history"),
-);
 
 // ─── Shared ──────────────────────────────────────────────────
 const Pos = lazy(() => import("./pages/_shared/pos"));
+const OrderHistory = lazy(() => import("./pages/_shared/order_history"));
+const Schedule = lazy(() => import("./pages/_shared/schedule"));
 const Profile = lazy(() => import("./pages/profile/desktop_profile"));
 
 const EmployeeDashboard = lazy(() => import("./pages/employee/employee_dashboard"));
@@ -206,11 +196,12 @@ const router = createBrowserRouter(
               element={<StaffManagement />}
             />
             <Route path="/admin/pos" element={<Pos />} />
-            <Route path="/admin/history" element={<AdminOrderHistory />} />
+            <Route path="/admin/history" element={<OrderHistory />} />
             <Route path="/admin/sales-report" element={<SalesReport />} />
             <Route path="/admin/cash-drawer" element={<CashDrawer />} />
             <Route path="/admin/receiving" element={<Receiving />} />
             <Route path="/admin/attendance" element={<Attendance />} />
+            <Route path="/admin/schedule" element={<Schedule />} />
             <Route path="/admin/suppliers" element={<Suppliers />} />
             <Route path="/admin/purchase-orders" element={<PurchaseOrders />} />
             <Route path="/admin/activity" element={<ActivityLog />} />
@@ -238,14 +229,12 @@ const router = createBrowserRouter(
               element={<StaffManagement />}
             />
             <Route path="/branch_manager/pos" element={<Pos />} />
-            <Route
-              path="/branch_manager/history"
-              element={<ManagerOrderHistory />}
-            />
+            <Route path="/branch_manager/history" element={<OrderHistory />} />
             <Route path="/branch_manager/sales-report" element={<SalesReport />} />
             <Route path="/branch_manager/cash-drawer" element={<CashDrawer />} />
             <Route path="/branch_manager/receiving" element={<Receiving />} />
             <Route path="/branch_manager/attendance" element={<Attendance />} />
+            <Route path="/branch_manager/schedule" element={<Schedule />} />
             <Route path="/branch_manager/suppliers" element={<Suppliers />} />
             <Route path="/branch_manager/purchase-orders" element={<PurchaseOrders />} />
             <Route path="/branch_manager/stock-alerts" element={<StockAlerts />} />
@@ -269,10 +258,7 @@ const router = createBrowserRouter(
               element={<Navigate to="/employee/stock-alerts" replace />}
             />
             <Route path="/employee/pos" element={<Pos />} />
-            <Route
-              path="/employee/history"
-              element={<EmployeeOrderHistory />}
-            />
+            <Route path="/employee/history" element={<OrderHistory />} />
             <Route path="/employee/sales-report" element={<SalesReport />} />
             <Route path="/employee/cash-drawer" element={<CashDrawer />} />
             <Route path="/employee/stock-alerts" element={<StockAlerts />} />
@@ -284,7 +270,6 @@ const router = createBrowserRouter(
         {/* ─── Shared ─── */}
         <Route element={<Dashboard_layout />}>
           <Route path="profile" element={<Profile />} />
-          <Route path="verify-account" element={<Email_verification />} />
         </Route>
       </Route>
 

@@ -15,6 +15,7 @@ import {
   CalendarCheck,
   ClipboardList,
   Contact,
+  CalendarDays,
 } from "lucide-react";
 
 // Map role → clean URL prefix
@@ -55,6 +56,7 @@ export const MENU_CONFIG = [
     section: "work",
     roles: ["admin", "branch_manager"],
   },
+  { item: "Schedule", link: "/schedule", icon: CalendarDays, section: "work", roles: ["admin", "branch_manager"] },
   { item: "Attendance", link: "/attendance", icon: CalendarCheck, section: "work", roles: ["admin", "branch_manager"] },
   { item: "Cash Drawer", link: "/cash-drawer", icon: Wallet, section: "work", roles: ALL },
   { item: "Time Clock", link: "/time-clock", icon: Clock, section: "work", roles: STAFF },

@@ -5,7 +5,8 @@ import axios from "axios";
 import { get as api_get, queryClient, error_message } from "../../lib/query";
 import { useBranches } from "../../hooks/use_branches";
 import { useProducts } from "../../hooks/use_product_lookup";
-import { ChevronDown, ChevronRight, PackagePlus, Search, Trash2, Truck } from "lucide-react";
+import { ChevronDown, ChevronRight, PackagePlus, ScanLine, Search, Trash2, Truck, X } from "lucide-react";
+import { ReceiptScanner } from "../../components/receipt_scanner";
 import Header from "../../components/header";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { AppContext } from "../../context/app_context";
@@ -65,6 +66,8 @@ export default function Receiving() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanned, setScanned] = useState(false); // lines came from a receipt photo
 
   const history_q = useQuery({
     queryKey: ["deliveries"],
@@ -103,6 +106,23 @@ export default function Receiving() {
     [products],
   );
 
+  // Lines checked in the receipt scanner join this delivery.
+  const apply_scan = ({ supplier: s, reference: ref, lines: scanned_lines }) => {
+    setLines((ls) => {
+      const next = [...ls];
+      for (const l of scanned_lines) {
+        const i = next.findIndex((x) => x.inventory_id === l.inventory_id);
+        if (i >= 0) next[i] = { ...next[i], ...l, quantity: Number(next[i].quantity || 0) + l.quantity };
+        else next.push(l);
+      }
+      return next;
+    });
+    if (s && !supplier) setSupplier(s);
+    if (ref && !reference) setReference(ref);
+    setScanned(true);
+    setSaved(null);
+  };
+
   const set_line = (id, key, value) =>
     setLines((ls) => ls.map((l) => (l.inventory_id === id ? { ...l, [key]: value } : l)));
 
@@ -124,16 +144,20 @@ export default function Receiving() {
         notes,
         update_cost: updateCost,
         purchase_order_id: poId ?? undefined,
+        source: scanned ? "receipt_scan" : "manual",
         items: lines.map((l) => ({
           inventory_id: l.inventory_id,
           quantity: Number(l.quantity),
           unit_cost: Number(l.unit_cost),
+          selling_price: l.selling_price,
+          receipt_name: l.receipt_name,
         })),
       });
       setSaved(data.delivery);
       setPoId(null);
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
       setLines([]);
+      setScanned(false);
       setReference("");
       setNotes("");
       queryClient.invalidateQueries({ queryKey: ["deliveries"] });
@@ -206,7 +230,20 @@ export default function Receiving() {
           </div>
         </Panel>
 
-        <Panel title="Items received" className="xl:col-span-2">
+        <Panel
+          title="Items received"
+          className="xl:col-span-2"
+          action={
+            <button
+              type="button"
+              onClick={() => setScanning(true)}
+              disabled={loadingProducts}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50"
+            >
+              <ScanLine size={14} /> Scan receipt
+            </button>
+          }
+        >
           <div className="relative mb-4">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -260,7 +297,23 @@ export default function Receiving() {
                     const q = Math.floor(Number(l.quantity)) || 0;
                     return (
                       <tr key={l.inventory_id}>
-                        <td className="py-2 font-medium text-gray-900">{l.name}</td>
+                        <td className="py-2 font-medium text-gray-900">
+                          {l.name}
+                          {l.selling_price !== undefined && (
+                            <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-indigo-700">
+                              New price: {peso(l.prev_price)} → <b>{peso(l.selling_price)}</b>
+                              <button
+                                type="button"
+                                onClick={() => set_line(l.inventory_id, "selling_price", undefined)}
+                                aria-label={`Keep the old price of ${l.name}`}
+                                title="Keep the old price"
+                                className="p-0.5 rounded hover:bg-indigo-50"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          )}
+                        </td>
                         <td className="py-2 text-xs text-gray-500 whitespace-nowrap">
                           {cur(l) ?? "—"} → <span className="font-semibold text-green-600">{cur(l) === null ? `+${q}` : cur(l) + q}</span> {l.unit}
                         </td>
@@ -343,6 +396,14 @@ export default function Receiving() {
           </ul>
         )}
       </Panel>
+      {scanning && (
+        <ReceiptScanner
+          products={products}
+          branch={is_admin ? branch : undefined}
+          onApply={apply_scan}
+          onClose={() => setScanning(false)}
+        />
+      )}
     </div>
   );
 }

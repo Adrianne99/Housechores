@@ -405,6 +405,8 @@ export const StocksCard = ({
         {p.edit?.stock ? (
           <EditableStock
             productId={product._id}
+            name={product.name}
+            cost={product.pricing?.cost_per_unit}
             stock_management={product.stock_management}
             onUpdate={(updated) => {
               updateProduct(product._id, {

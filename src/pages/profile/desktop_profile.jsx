@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { BadgeCheck, Hash, Mail, ShieldCheck, Store } from "lucide-react";
+import { BadgeCheck, Hash, Mail, Store } from "lucide-react";
 import Header from "../../components/header";
 import { Panel } from "../../components/panel";
 import { ApprovalPinCard } from "../../components/approval_pin_card";
@@ -14,7 +14,6 @@ const DesktopProfile = () => {
     { icon: Hash, label: "Staff ID", value: staff_code(userData) },
     { icon: Mail, label: "Email", value: userData?.email },
     { icon: Store, label: "Branch", value: branch ?? (userData?.role === "admin" ? "All branches" : "Not assigned") },
-    { icon: ShieldCheck, label: "Email verified", value: userData?.is_account_verified ? "Yes" : "Not yet" },
     { icon: BadgeCheck, label: "Member since", value: date_of(userData?.createdAt, { month: "long", day: "numeric", year: "numeric" }) },
   ];
 

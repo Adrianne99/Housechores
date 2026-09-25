@@ -12,8 +12,9 @@ import { cn } from "../../utils/utils";
 const TABS = [
   { key: "all", label: "All" },
   { key: "unread", label: "Unread" },
-  { key: "sales", label: "Sales", types: ["sale", "void"] },
+  { key: "sales", label: "Sales", types: ["sale", "void", "refund", "discount", "drawer"] },
   { key: "stock", label: "Stock", types: ["low_stock", "out_of_stock", "restock_request", "purchase", "delivery"] },
+  { key: "schedule", label: "Schedule", types: ["schedule"] },
 ];
 
 export default function NotificationsPage() {

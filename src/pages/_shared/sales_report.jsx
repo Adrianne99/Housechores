@@ -37,6 +37,14 @@ export default function SalesReport() {
   });
   const refunds = refunds_q.data?.refunds ?? [];
   const is_employee = userData?.role === "employee";
+  // Manual stock changes (damage, expiry, counts…) — managers and admins.
+  const adj_q = useQuery({
+    queryKey: ["products", "adjustments", date],
+    queryFn: () => api_get("/api/products/adjustments", { from: date, to: date }),
+    placeholderData: keepPreviousData,
+    enabled: !!userData && !is_employee,
+  });
+  const adjustments = adj_q.data?.adjustments ?? [];
   const scope = is_employee
     ? "Your own sales"
     : userData?.role === "branch_manager"
@@ -231,6 +239,69 @@ export default function SalesReport() {
           </div>
         )}
       </Panel>
+      {!is_employee && (
+        <Panel
+          title={`Stock adjustments${adjustments.length ? ` · ${adjustments.length}${adj_q.data.lost_value ? ` · −${peso(adj_q.data.lost_value)} lost` : ""}` : ""}`}
+        >
+          {adj_q.isPending ? (
+            <Skeleton rows={3} />
+          ) : adjustments.length === 0 ? (
+            <EmptyState>No damaged, expired or corrected stock on this day.</EmptyState>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {adj_q.data.by_reason.map((r) => (
+                  <span key={r.reason} className="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-700">
+                    {r.label}: {r.units > 0 ? "+" : ""}
+                    {r.units} unit(s)
+                    {r.value < 0 && <span className="text-red-600"> · −{peso(-r.value)}</span>}
+                  </span>
+                ))}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                      <th className="py-2 font-medium">Time</th>
+                      <th className="py-2 font-medium">Product</th>
+                      <th className="py-2 font-medium">Reason</th>
+                      <th className="py-2 font-medium">By</th>
+                      <th className="py-2 font-medium text-right">Change</th>
+                      <th className="py-2 font-medium text-right">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {adjustments.map((a) => (
+                      <tr key={a._id} className="align-top">
+                        <td className="py-2.5 text-gray-600 whitespace-nowrap">{time_of(a.createdAt)}</td>
+                        <td className="py-2.5">
+                          <p className="font-medium text-gray-900">{a.product_name}</p>
+                          {userData?.role === "admin" && a.branch?.name && <p className="text-xs text-gray-400">{a.branch.name}</p>}
+                        </td>
+                        <td className="py-2.5 text-gray-600">
+                          {adj_q.data.reasons[a.reason] ?? a.reason}
+                          {a.note && <span className="block text-xs text-gray-400">{a.note}</span>}
+                        </td>
+                        <td className="py-2.5 text-gray-600">{a.by_name}</td>
+                        <td className="py-2.5 text-right tabular-nums whitespace-nowrap">
+                          <span className={a.change < 0 ? "text-red-600 font-semibold" : "text-green-700 font-semibold"}>
+                            {a.change > 0 ? "+" : ""}
+                            {a.change}
+                          </span>
+                          <span className="block text-xs text-gray-400">
+                            {a.before} → {a.after}
+                          </span>
+                        </td>
+                        <td className="py-2.5 text-right tabular-nums text-gray-600">{a.value ? peso(a.value) : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </Panel>
+      )}
     </div>
   );
 }
