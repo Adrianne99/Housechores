@@ -26,7 +26,7 @@ const num = (n) => Number(n ?? 0).toLocaleString("en-PH");
 // No sales last month → nothing to compare with (not "+100%").
 const vs_hint = (change) => (typeof change === "number" ? "vs last month" : "no sales last month to compare");
 
-const METHOD_LABELS = { cash: "Cash", gcash: "GCash", card: "Card", credit: "Utang" };
+const METHOD_LABELS = { cash: "Cash", gcash: "GCash", card: "Card" };
 
 const STATUS_STYLES = {
   completed: "bg-green-100 text-green-700",

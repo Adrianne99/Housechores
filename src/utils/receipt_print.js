@@ -4,7 +4,7 @@
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
 const money = (n) => Number(n ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const METHOD = { cash: "Cash", gcash: "GCash", card: "Card", credit: "Utang (charge to account)" };
+const METHOD = { cash: "Cash", gcash: "GCash", card: "Card" };
 
 // Lines for both the on-screen and printed receipt.
 export const receipt_lines = (order, settings) => {
@@ -61,7 +61,6 @@ ${r.tin ? `<div class="c">${esc(r.tin)}</div>` : ""}
 ${row("No.", esc(order.order_number))}
 ${row("Date", esc(date))}
 ${row("Cashier", esc(order.cashier?.name ?? ""))}
-${p.customer_name ? row("Customer", esc(p.customer_name)) : ""}
 <div class="hr"></div>
 ${items}
 <div class="hr"></div>

@@ -84,7 +84,7 @@ export const sync = async () => {
   }
   set({ syncing: false, last_synced: sent ? Date.now() : state.last_synced });
   if (sent) {
-    for (const key of ["orders", "dashboard", "drawer", "products", "customers"]) {
+    for (const key of ["orders", "dashboard", "drawer", "products"]) {
       queryClient.invalidateQueries({ queryKey: [key] });
     }
   }

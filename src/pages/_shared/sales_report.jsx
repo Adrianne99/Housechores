@@ -9,7 +9,7 @@ import { AppContext } from "../../context/app_context";
 import { useSalesSummary } from "../../hooks/use_sales_summary";
 import { date_of, num, peso, time_of, today_local } from "../../utils/format";
 
-const PAYMENT_LABELS = { cash: "Cash", card: "Card", gcash: "GCash", credit: "Utang" };
+const PAYMENT_LABELS = { cash: "Cash", card: "Card", gcash: "GCash" };
 const DISCOUNT_LABELS = {
   senior: "Senior citizen",
   pwd: "PWD",

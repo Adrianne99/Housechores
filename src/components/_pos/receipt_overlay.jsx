@@ -48,7 +48,6 @@ export const ReceiptOverlay = ({ open, order, onNewSale }) => {
             <Row label="No." value={order.order_number} />
             <Row label="Date" value={new Date(order.offline_sold_at ?? order.createdAt).toLocaleString("en-PH")} />
             <Row label="Cashier" value={order.cashier?.name} />
-            {p.customer_name && <Row label="Customer" value={p.customer_name} />}
             <div className="border-t border-dashed border-gray-300" />
             {order.items.map((item, idx) => (
               <div key={idx}>
