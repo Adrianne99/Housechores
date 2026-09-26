@@ -42,6 +42,8 @@ const Schedule = lazy(() => import("./pages/_shared/schedule"));
 const ProfitReport = lazy(() => import("./pages/_shared/profit_report"));
 const StockCount = lazy(() => import("./pages/_shared/stock_count"));
 const Transfers = lazy(() => import("./pages/_shared/transfers"));
+const StockMovements = lazy(() => import("./pages/_shared/stock_movements"));
+const PurchasingReport = lazy(() => import("./pages/_shared/purchasing_report"));
 const StoreSettings = lazy(() => import("./pages/admin/store_settings"));
 const Profile = lazy(() => import("./pages/profile/desktop_profile"));
 
@@ -209,6 +211,8 @@ const router = createBrowserRouter(
             <Route path="/admin/profit" element={<ProfitReport />} />
             <Route path="/admin/stock-count" element={<StockCount />} />
             <Route path="/admin/transfers" element={<Transfers />} />
+            <Route path="/admin/stock-movements" element={<StockMovements />} />
+            <Route path="/admin/purchasing-report" element={<PurchasingReport />} />
             <Route path="/admin/settings" element={<StoreSettings />} />
             <Route path="/admin/stock-alerts" element={<StockAlerts />} />
             <Route path="/admin/suppliers" element={<Suppliers />} />
@@ -247,6 +251,8 @@ const router = createBrowserRouter(
             <Route path="/branch_manager/profit" element={<ProfitReport />} />
             <Route path="/branch_manager/stock-count" element={<StockCount />} />
             <Route path="/branch_manager/transfers" element={<Transfers />} />
+            <Route path="/branch_manager/stock-movements" element={<StockMovements />} />
+            <Route path="/branch_manager/purchasing-report" element={<PurchasingReport />} />
             <Route path="/branch_manager/suppliers" element={<Suppliers />} />
             <Route path="/branch_manager/purchase-orders" element={<PurchaseOrders />} />
             <Route path="/branch_manager/stock-alerts" element={<StockAlerts />} />

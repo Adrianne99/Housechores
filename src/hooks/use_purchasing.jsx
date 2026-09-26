@@ -40,5 +40,7 @@ export const purchasing = {
   approve: (id) => call(() => axios.post(`/api/purchase-orders/${id}/approve`)),
   resend: (id) => call(() => axios.post(`/api/purchase-orders/${id}/resend`)),
   cancel: (id) => call(() => axios.post(`/api/purchase-orders/${id}/cancel`)),
+  // body: { status: "confirmed" | "declined", expected_delivery_date?, note? }
+  reply: (id, body) => call(() => axios.post(`/api/purchase-orders/${id}/reply`, body)),
   add_low_stock: () => call(() => axios.post("/api/purchase-orders/add-low-stock")),
 };

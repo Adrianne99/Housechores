@@ -16,6 +16,7 @@ import { H6 } from "../../components/texts";
 import { ChartCard, DashboardCard } from "../../components/card";
 import Header from "../../components/header";
 import { useDashboard } from "../../hooks/use_dashboard";
+import { method_label } from "../../utils/format";
 
 const peso = (n) =>
   Number(n ?? 0).toLocaleString("en-PH", {
@@ -26,7 +27,6 @@ const num = (n) => Number(n ?? 0).toLocaleString("en-PH");
 // No sales last month → nothing to compare with (not "+100%").
 const vs_hint = (change) => (typeof change === "number" ? "vs last month" : "no sales last month to compare");
 
-const METHOD_LABELS = { cash: "Cash", gcash: "GCash", card: "Card" };
 
 const STATUS_STYLES = {
   completed: "bg-green-100 text-green-700",
@@ -106,7 +106,7 @@ const AdminDashboard = () => {
     {
       title: "Needs Restock",
       value: num(inv.low_stock),
-      hint: `${num(inv.out_of_stock)} out of stock${is_admin && stats?.branches_count > 1 ? " · all branches" : ""}`,
+      hint: `${num(inv.critical_stock)} critical · ${num(inv.out_of_stock)} out of stock${is_admin && stats?.branches_count > 1 ? " · all branches" : ""}`,
       icon: <AlertTriangle size={20} />,
     },
     is_admin
@@ -269,7 +269,7 @@ const AdminDashboard = () => {
                 >
                   <span className="flex items-center gap-2 text-sm text-gray-700 capitalize">
                     <CreditCard size={15} className="text-indigo-400" />
-                    {METHOD_LABELS[p.method] ?? p.method}
+                    {method_label(p.method)}
                   </span>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-slate-800">

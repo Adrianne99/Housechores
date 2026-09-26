@@ -65,3 +65,12 @@ export const time_ago = (d) => {
 // Today's date in the business timezone, "YYYY-MM-DD"
 export const today_local = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
+
+// Payment methods: the store's list (store settings) holds labels; orders
+// store the key ("Bank Transfer" → "bank_transfer"). Same rule as the backend.
+export const DEFAULT_PAYMENT_METHODS = ["Cash", "GCash", "Maya", "Bank Transfer", "Card"];
+export const method_key = (label) =>
+  String(label).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+export const method_label = (key, labels = []) =>
+  [...labels, ...DEFAULT_PAYMENT_METHODS].find((l) => method_key(l) === key) ??
+  String(key ?? "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());

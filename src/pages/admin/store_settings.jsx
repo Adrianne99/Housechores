@@ -31,7 +31,7 @@ const SAMPLE = {
 
 // Store details form — mounted with the loaded settings.
 const DetailsForm = ({ initial }) => {
-  const [f, setF] = useState(initial);
+  const [f, setF] = useState({ ...initial, methods_text: initial.payment_methods.join(", ") });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
@@ -40,7 +40,7 @@ const DetailsForm = ({ initial }) => {
     setBusy(true);
     setMsg(null);
     try {
-      const { data } = await axios.put("/api/settings", f);
+      const { data } = await axios.put("/api/settings", { ...f, payment_methods: f.methods_text.split(",") });
       queryClient.setQueryData(["settings"], { success: true, settings: data.settings });
       setMsg({ ok: true, text: "Saved. New receipts use these details." });
     } catch (err) {
@@ -90,6 +90,14 @@ const DetailsForm = ({ initial }) => {
                 <option value="58">58 mm (small thermal)</option>
                 <option value="80">80 mm (wide thermal)</option>
               </select>
+            </label>
+            <label className="text-xs text-gray-500 flex flex-col gap-1 sm:col-span-2">
+              Payment methods <span className="text-gray-400">(comma-separated; Cash is always included)</span>
+              <input value={f.methods_text} onChange={set("methods_text")} placeholder="Cash, GCash, Maya, Bank Transfer" className={field} />
+            </label>
+            <label className="text-xs text-gray-500 flex flex-col gap-1">
+              Cash drawer alert (₱ over/short)
+              <input type="number" min={0} value={f.cash_variance_limit} onChange={set("cash_variance_limit")} className={field} />
             </label>
             <label className="flex items-center gap-2 text-sm text-gray-700 mt-5">
               <input type="checkbox" checked={f.vat_registered} onChange={set("vat_registered")} />

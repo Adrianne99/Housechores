@@ -7,9 +7,8 @@ import { DashboardCard } from "../../components/card";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { AppContext } from "../../context/app_context";
 import { useSalesSummary } from "../../hooks/use_sales_summary";
-import { date_of, num, peso, time_of, today_local } from "../../utils/format";
+import { date_of, method_label, num, peso, time_of, today_local } from "../../utils/format";
 
-const PAYMENT_LABELS = { cash: "Cash", card: "Card", gcash: "GCash" };
 const DISCOUNT_LABELS = {
   senior: "Senior citizen",
   pwd: "PWD",
@@ -134,7 +133,7 @@ export default function SalesReport() {
               {s.by_payment.map((p) => (
                 <div key={p.method}>
                   <div className="flex justify-between text-sm">
-                    <span className="font-medium text-gray-900">{PAYMENT_LABELS[p.method] ?? p.method}</span>
+                    <span className="font-medium text-gray-900">{method_label(p.method)}</span>
                     <span className="tabular-nums text-gray-900">{peso(p.total)}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
@@ -230,7 +229,7 @@ export default function SalesReport() {
                     </td>
                     <td className="py-2.5 text-right tabular-nums">
                       <span className="font-semibold text-orange-600">−{peso(r.amount)}</span>
-                      <span className="block text-xs text-gray-400">{PAYMENT_LABELS[r.method] ?? r.method}</span>
+                      <span className="block text-xs text-gray-400">{method_label(r.method)}</span>
                     </td>
                   </tr>
                 ))}

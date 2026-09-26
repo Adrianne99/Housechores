@@ -1,10 +1,11 @@
 // Thermal receipt (58 mm / 80 mm) built as plain HTML and printed from a
 // hidden frame, so only the receipt prints — sized to the paper roll.
 
+import { method_label } from "./format";
+
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
 const money = (n) => Number(n ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const METHOD = { cash: "Cash", gcash: "GCash", card: "Card" };
 
 // Lines for both the on-screen and printed receipt.
 export const receipt_lines = (order, settings) => {
@@ -25,7 +26,7 @@ export const receipt_lines = (order, settings) => {
         ? [["VAT-exempt sales", total], ["VAT 12%", 0]]
         : [["VATable sales", Math.round((total - vat) * 100) / 100], ["VAT 12%", vat]]
       : [],
-    method: METHOD[order.payment?.method] ?? order.payment?.method,
+    method: method_label(order.payment?.method, s.payment_methods),
   };
 };
 

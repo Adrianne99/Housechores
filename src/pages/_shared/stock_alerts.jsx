@@ -14,6 +14,7 @@ import { ExpiringPanel } from "../../components/expiring_panel";
 const FILTERS = [
   { key: "all", label: "All alerts" },
   { key: "out", label: "Out of stock" },
+  { key: "critical", label: "Critical" },
   { key: "low", label: "Low stock" },
 ];
 
@@ -35,6 +36,7 @@ export default function StockAlerts() {
   };
 
   const out_count = alerts.filter((a) => a.level === "out").length;
+  const critical_count = alerts.filter((a) => a.level === "critical").length;
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return alerts.filter(
@@ -57,7 +59,7 @@ export default function StockAlerts() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <DashboardCard title="Out of stock" value={out_count} loading={loading} icon={<PackageX size={20} />} hint="can't be sold" />
-        <DashboardCard title="Low stock" value={alerts.length - out_count} loading={loading} icon={<AlertTriangle size={20} />} hint="reorder soon" />
+        <DashboardCard title="Low stock" value={alerts.length - out_count} loading={loading} icon={<AlertTriangle size={20} />} hint={critical_count ? `${critical_count} critical` : "reorder soon"} />
         <DashboardCard title="Products in branch" value={total} loading={loading} icon={<Package size={20} />} hint={total ? `${Math.round(((total - alerts.length) / total) * 100)}% healthy` : ""} />
       </div>
 
@@ -127,7 +129,7 @@ export default function StockAlerts() {
                       </td>
                       <td className="py-2.5 font-mono text-xs text-gray-600">{p.barcode}</td>
                       <td className="py-2.5">
-                        <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", p.level === "out" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700")}>
+                        <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", p.level === "out" ? "bg-red-100 text-red-600" : p.level === "critical" ? "bg-orange-100 text-orange-700" : "bg-amber-100 text-amber-700")}>
                           {p.stock_management.current_stock} {p.unit}
                         </span>
                       </td>

@@ -19,6 +19,8 @@ import {
   PiggyBank,
   ClipboardCheck,
   ArrowLeftRight,
+  ArrowUpDown,
+  BarChart3,
   Settings,
 } from "lucide-react";
 
@@ -49,6 +51,7 @@ export const MENU_CONFIG = [
     roles: ALL,
   },
   { item: "Profit Report", link: "/profit", icon: PiggyBank, section: "sales", roles: ["admin", "branch_manager"] },
+  { item: "Purchasing Report", link: "/purchasing-report", icon: BarChart3, section: "sales", roles: ["admin", "branch_manager"] },
   { item: "Inventory", link: "/inventory", icon: Box, section: "stock", roles: ["admin", "branch_manager"] },
   { item: "Stock Alerts", link: "/stock-alerts", icon: AlertTriangle, section: "stock", roles: ALL },
   { item: "Purchase Orders", link: "/purchase-orders", icon: ClipboardList, section: "stock", roles: ["admin", "branch_manager"] },
@@ -56,6 +59,7 @@ export const MENU_CONFIG = [
   { item: "Suppliers", link: "/suppliers", icon: Contact, section: "stock", roles: ["admin", "branch_manager"] },
   { item: "Stock Count", link: "/stock-count", icon: ClipboardCheck, section: "stock", roles: ["admin", "branch_manager"] },
   { item: "Transfers", link: "/transfers", icon: ArrowLeftRight, section: "stock", roles: ["admin", "branch_manager"] },
+  { item: "Stock Movements", link: "/stock-movements", icon: ArrowUpDown, section: "stock", roles: ["admin", "branch_manager"] },
   {
     item: "Staff Management",
     link: "/staff-management",

@@ -7,20 +7,10 @@ import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { AppContext } from "../../context/app_context";
 import { useBranches } from "../../hooks/use_branches";
 import { get, error_message } from "../../lib/query";
-import { num, peso, today_local } from "../../utils/format";
+import { num, peso } from "../../utils/format";
+import { useDateRange } from "../../components/date_range";
 import { cn } from "../../utils/utils";
 
-const add_days = (date, n) => {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-};
-const PRESETS = [
-  { key: "today", label: "Today", range: (t) => [t, t] },
-  { key: "7", label: "Last 7 days", range: (t) => [add_days(t, -6), t] },
-  { key: "30", label: "Last 30 days", range: (t) => [add_days(t, -29), t] },
-  { key: "month", label: "This month", range: (t) => [`${t.slice(0, 8)}01`, t] },
-];
 const short_day = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-PH", { month: "short", day: "numeric", timeZone: "UTC" });
 const plain = (n) => Number(n ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -33,9 +23,7 @@ const csv_cell = (v) => {
 export default function ProfitReport() {
   const { userData } = useContext(AppContext);
   const is_admin = userData?.role === "admin";
-  const today = today_local();
-  const [range, setRange] = useState(() => PRESETS[1].range(today));
-  const [preset, setPreset] = useState("7");
+  const [range, range_controls] = useDateRange("7");
   const [branch, setBranch] = useState("");
   const branches = useBranches({ enabled: is_admin });
   const params = { from: range[0], to: range[1], ...(branch && { branch }) };
@@ -64,22 +52,7 @@ export default function ProfitReport() {
       <Header title="Profit Report" subtitle="What you sold, what it cost you, and what you kept." />
 
       <div className="flex flex-wrap items-center gap-2">
-        {PRESETS.map((p) => (
-          <button
-            key={p.key}
-            type="button"
-            onClick={() => {
-              setPreset(p.key);
-              setRange(p.range(today));
-            }}
-            className={cn("px-3 py-1.5 text-xs font-semibold rounded-full border", preset === p.key ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50")}
-          >
-            {p.label}
-          </button>
-        ))}
-        <input type="date" aria-label="From" value={range[0]} max={range[1]} onChange={(e) => e.target.value && (setPreset(null), setRange([e.target.value, range[1]]))} className="px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white" />
-        <span className="text-gray-400">to</span>
-        <input type="date" aria-label="To" value={range[1]} min={range[0]} max={today} onChange={(e) => e.target.value && (setPreset(null), setRange([range[0], e.target.value]))} className="px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white" />
+        {range_controls}
         {is_admin && (
           <select value={branch} onChange={(e) => setBranch(e.target.value)} aria-label="Branch" className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white">
             <option value="">All branches</option>

@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { get, error_message } from "../lib/query";
 import { Printer, X } from "lucide-react";
-import { date_of, peso, time_of } from "../utils/format";
+import { date_of, method_label, peso, time_of } from "../utils/format";
 import { z_label } from "../utils/cash";
 
-const PAYMENT_LABELS = { cash: "Cash", card: "Card", gcash: "GCash" };
 
 const Row = ({ label, value, strong, tone }) => (
   <div className={`flex justify-between py-1 text-sm ${tone ?? "text-gray-600"}`}>
@@ -92,7 +91,7 @@ export const ZReportModal = ({ sessionId, onClose }) => {
 
             <div className="border-t border-dashed border-gray-300 py-2">
               {z.by_payment.map((p) => (
-                <Row key={p.method} label={`${PAYMENT_LABELS[p.method] ?? p.method} (${p.count})`} value={peso(p.total)} />
+                <Row key={p.method} label={`${method_label(p.method)} (${p.count})`} value={peso(p.total)} />
               ))}
             </div>
 

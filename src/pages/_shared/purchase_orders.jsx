@@ -14,21 +14,23 @@ import { cn } from "../../utils/utils";
 const TABS = [
   { key: "draft", label: "Needs approval", statuses: "draft" },
   { key: "sending", label: "Sending", statuses: "approved" },
-  { key: "sent", label: "Sent to supplier", statuses: "sent,partially_received" },
+  { key: "sent", label: "Sent to supplier", statuses: "sent,confirmed,partially_received" },
   { key: "done", label: "Received", statuses: "received" },
-  { key: "cancelled", label: "Cancelled", statuses: "cancelled" },
+  { key: "cancelled", label: "Declined / cancelled", statuses: "declined,cancelled" },
 ];
 
 const STATUS = {
   draft: ["Needs approval", "bg-amber-100 text-amber-700"],
   approved: ["Sending…", "bg-sky-100 text-sky-700"],
   sent: ["Sent", "bg-indigo-100 text-indigo-700"],
+  confirmed: ["Supplier confirmed", "bg-emerald-100 text-emerald-700"],
+  declined: ["Supplier declined", "bg-red-100 text-red-700"],
   partially_received: ["Partly received", "bg-teal-100 text-teal-700"],
   received: ["Received", "bg-green-100 text-green-700"],
   cancelled: ["Cancelled", "bg-gray-100 text-gray-500"],
 };
 
-const SOURCE = { low_stock: "Auto · low stock", cashier_request: "Cashier request", manual: "Manual" };
+const SOURCE = { low_stock: "Auto · low stock", cashier_request: "Cashier request", manual: "Manual", automated: "n8n automation" };
 
 // ─── One order card ──────────────────────────────────────────
 const OrderCard = ({ po, is_admin, n8n }) => {
@@ -40,6 +42,7 @@ const OrderCard = ({ po, is_admin, n8n }) => {
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [eta, setEta] = useState("");
   const { data: products = [] } = useProducts(is_admin ? po.branch?._id : undefined, { enabled: draft });
   const { data: sup_data } = useSuppliers({ enabled: draft });
   const suppliers = (sup_data?.suppliers ?? []).filter((s) => s.name !== "Unassigned supplier");
@@ -227,6 +230,14 @@ const OrderCard = ({ po, is_admin, n8n }) => {
             {po.sent_at && <p className="flex items-center gap-1"><Mail size={12} /> Emailed to {po.sent_to} via {po.sent_via === "n8n" ? "n8n" : "email"} · {time_of(po.sent_at)}</p>}
             {po.status === "approved" && !po.send_error && <p className="text-sky-700">Waiting for n8n to confirm the email was sent…</p>}
             {po.send_error && <p className="text-red-600">⚠ {po.send_error}</p>}
+            {po.confirmed_at && po.status !== "declined" && (
+              <p className="text-emerald-700">
+                Supplier confirmed · {date_of(po.confirmed_at, { month: "short", day: "numeric" })}
+                {po.expected_delivery_date && ` · delivery expected ${date_of(po.expected_delivery_date, { month: "short", day: "numeric" })}`}
+              </p>
+            )}
+            {po.status === "declined" && <p className="text-red-600">Supplier declined — order these items elsewhere.</p>}
+            {po.supplier_note && <p>Supplier: “{po.supplier_note}”</p>}
             {po.cancelled_by_name && <p>Cancelled by {po.cancelled_by_name}</p>}
           </div>
         )}
@@ -238,7 +249,18 @@ const OrderCard = ({ po, is_admin, n8n }) => {
             {lines.length} item(s) · <span className="font-bold text-gray-900">{peso(draft ? total : po.total_cost)}</span>
           </span>
           <div className="ml-auto flex flex-wrap gap-2 pt-3">
-            {["draft", "approved", "sent"].includes(po.status) && (
+            {["approved", "sent"].includes(po.status) && (
+              <>
+                <input type="date" value={eta} onChange={(e) => setEta(e.target.value)} aria-label="Expected delivery date" title="Expected delivery date (optional)" className="px-2 py-2 rounded-lg border border-gray-200 text-sm" />
+                <button type="button" disabled={!!busy} onClick={() => run("reply", () => purchasing.reply(po._id, { status: "confirmed", expected_delivery_date: eta || undefined }))} className="px-3 py-2 rounded-lg border border-emerald-200 text-emerald-700 text-sm font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 size={14} /> Supplier confirmed
+                </button>
+                <button type="button" disabled={!!busy} onClick={() => window.confirm(`Mark ${po.po_number} as declined by the supplier?`) && run("reply", () => purchasing.reply(po._id, { status: "declined" }))} className="px-3 py-2 rounded-lg border border-red-200 text-red-600 text-sm">
+                  Declined
+                </button>
+              </>
+            )}
+            {["draft", "approved", "sent", "confirmed", "declined"].includes(po.status) && (
               <button type="button" disabled={!!busy} onClick={() => window.confirm(`Cancel ${po.po_number}?`) && run("cancel", () => purchasing.cancel(po._id))} className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 flex items-center gap-1.5">
                 <X size={14} /> Cancel order
               </button>
@@ -258,7 +280,7 @@ const OrderCard = ({ po, is_admin, n8n }) => {
                 <RefreshCw size={14} /> {busy === "resend" ? "Sending..." : "Resend"}
               </button>
             )}
-            {["approved", "sent", "partially_received"].includes(po.status) && (
+            {["approved", "sent", "confirmed", "partially_received"].includes(po.status) && (
               <button type="button" onClick={() => navigate(`${prefix}/receiving`, { state: { purchase_order: po } })} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold flex items-center gap-1.5">
                 <PackageCheck size={14} /> Receive delivery
               </button>

@@ -25,7 +25,10 @@ const StockDialog = ({ productId, name, cost = 0, stock_management, onUpdate, on
   const [form, setForm] = useState({
     current_stock: before,
     reorder_level: stock_management.reorder_level,
+    critical_level: stock_management.critical_level ?? 0,
+    target_stock: stock_management.target_stock ?? 0,
     supplier: stock_management.supplier ?? "",
+    supplier_sku: stock_management.supplier_sku ?? "",
     reason: "",
     note: "",
   });
@@ -49,18 +52,20 @@ const StockDialog = ({ productId, name, cost = 0, stock_management, onUpdate, on
     }
     setLoading(true);
     try {
+      const levels = {
+        reorder_level: Number(form.reorder_level),
+        critical_level: Number(form.critical_level) || 0,
+        target_stock: Number(form.target_stock) || 0,
+        supplier: form.supplier,
+        supplier_sku: form.supplier_sku,
+      };
       const { data } = await axios.patch(`/api/products/${productId}/stock`, {
         current_stock: after,
-        reorder_level: Number(form.reorder_level),
-        supplier: form.supplier,
+        ...levels,
         ...(change !== 0 && { reason: form.reason, note: form.note.trim() }),
       });
       if (!data.success) throw new Error(data.message);
-      onUpdate({
-        current_stock: after,
-        reorder_level: Number(form.reorder_level),
-        supplier: form.supplier,
-      });
+      onUpdate({ ...stock_management, current_stock: after, ...levels });
       onClose();
     } catch (err) {
       setError(err.response?.data?.message || err.message);
@@ -76,7 +81,7 @@ const StockDialog = ({ productId, name, cost = 0, stock_management, onUpdate, on
         aria-modal="true"
         aria-label="Adjust stock"
         onKeyDown={(e) => e.key === "Escape" && !loading && onClose()}
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-y-auto max-h-[92vh]"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="min-w-0">
@@ -139,17 +144,33 @@ const StockDialog = ({ productId, name, cost = 0, stock_management, onUpdate, on
             </div>
           )}
 
-          <label className="flex flex-col gap-1.5">
-            <span className={label}>
-              Reorder level <span className="text-red-400">*</span>
-            </span>
-            <input type="number" min={0} value={form.reorder_level} onChange={set("reorder_level")} className={input} />
-            <span className="text-xs text-gray-400">Alert and auto-order when stock falls to this number</span>
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className={label}>Supplier</span>
-            <input value={form.supplier} onChange={set("supplier")} placeholder="e.g. NutriAsia" className={input} />
-          </label>
+          <div className="grid grid-cols-3 gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>
+                Reorder at <span className="text-red-400">*</span>
+              </span>
+              <input type="number" min={0} value={form.reorder_level} onChange={set("reorder_level")} className={input} />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Critical at</span>
+              <input type="number" min={0} value={form.critical_level} onChange={set("critical_level")} className={input} />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Order up to</span>
+              <input type="number" min={0} value={form.target_stock} onChange={set("target_stock")} placeholder="auto" className={input} />
+            </label>
+          </div>
+          <span className="-mt-2 text-xs text-gray-400">Low stock alerts and restock orders start at &quot;Reorder at&quot;. 0 in the other two = not used / automatic.</span>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Supplier</span>
+              <input value={form.supplier} onChange={set("supplier")} placeholder="e.g. NutriAsia" className={input} />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Supplier SKU</span>
+              <input value={form.supplier_sku} onChange={set("supplier_sku")} maxLength={60} className={input} />
+            </label>
+          </div>
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">⚠ {error}</p>}
         </div>
 

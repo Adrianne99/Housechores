@@ -56,6 +56,7 @@ export default function Receiving() {
             unit: i.unit,
             current: null,
             quantity: i.quantity - (i.received_qty ?? 0),
+            expected: i.quantity - (i.received_qty ?? 0),
             unit_cost: i.unit_cost,
           }))
       : preset
@@ -152,6 +153,7 @@ export default function Receiving() {
           selling_price: l.selling_price,
           receipt_name: l.receipt_name,
           expiry_date: l.expiry_date || undefined,
+          batch_number: l.batch_number?.trim() || undefined,
         })),
       });
       setSaved(data.delivery);
@@ -289,7 +291,7 @@ export default function Receiving() {
                     <th className="py-2 font-medium">Stock</th>
                     <th className="py-2 font-medium w-24">Qty</th>
                     <th className="py-2 font-medium w-28">Unit cost</th>
-                    <th className="py-2 font-medium w-36">Expiry <span className="normal-case font-normal text-gray-400">(optional)</span></th>
+                    <th className="py-2 font-medium w-36">Expiry / batch <span className="normal-case font-normal text-gray-400">(optional)</span></th>
                     <th className="py-2 font-medium text-right">Line total</th>
                     <th className="py-2" />
                   </tr>
@@ -321,12 +323,14 @@ export default function Receiving() {
                         </td>
                         <td className="py-2">
                           <input type="number" min={1} step={1} inputMode="numeric" aria-label={`Quantity of ${l.name}`} value={l.quantity} onChange={(e) => set_line(l.inventory_id, "quantity", e.target.value)} className="w-20 px-2 py-1.5 border border-gray-200 rounded-md" />
+                          {l.expected > q && <p className="mt-0.5 text-xs font-semibold text-amber-600">Short {l.expected - q} of {l.expected}</p>}
                         </td>
                         <td className="py-2">
                           <input type="number" min={0} step="0.01" inputMode="decimal" aria-label={`Unit cost of ${l.name}`} value={l.unit_cost} onChange={(e) => set_line(l.inventory_id, "unit_cost", e.target.value)} className="w-24 px-2 py-1.5 border border-gray-200 rounded-md" />
                         </td>
                         <td className="py-2">
                           <input type="date" aria-label={`Expiry date of ${l.name}`} value={l.expiry_date ?? ""} onChange={(e) => set_line(l.inventory_id, "expiry_date", e.target.value)} className="w-36 px-2 py-1.5 border border-gray-200 rounded-md text-xs" />
+                          <input aria-label={`Batch number of ${l.name}`} value={l.batch_number ?? ""} maxLength={40} placeholder="Batch / lot no." onChange={(e) => set_line(l.inventory_id, "batch_number", e.target.value)} className="mt-1 w-36 px-2 py-1.5 border border-gray-200 rounded-md text-xs" />
                         </td>
                         <td className="py-2 text-right tabular-nums">{peso((c(l.unit_cost) * q) / 100)}</td>
                         <td className="py-2 text-right">

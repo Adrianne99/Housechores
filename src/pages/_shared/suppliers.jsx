@@ -6,7 +6,10 @@ import { AppContext } from "../../context/app_context";
 import { useSuppliers, purchasing } from "../../hooks/use_purchasing";
 import { error_message } from "../../lib/query";
 
-const EMPTY = { name: "", contact_person: "", email: "", phone: "", lead_time_days: 2, notes: "" };
+const EMPTY = {
+  name: "", contact_person: "", email: "", phone: "", lead_time_days: 2, notes: "",
+  address: "", telegram: "", preferred_contact: "email", delivery_days: "", min_order_value: 0,
+};
 
 // Add / edit dialog — mounted only while open, so it starts from `initial`.
 const SupplierDialog = ({ initial, onClose }) => {
@@ -21,6 +24,7 @@ const SupplierDialog = ({ initial, onClose }) => {
     const r = await purchasing.save_supplier(initial?._id, {
       ...form,
       lead_time_days: Number(form.lead_time_days) || 0,
+      min_order_value: Number(form.min_order_value) || 0,
     });
     setBusy(false);
     if (!r.ok) return setError(r.message);
@@ -37,7 +41,7 @@ const SupplierDialog = ({ initial, onClose }) => {
         aria-modal="true"
         aria-label="Supplier"
         onKeyDown={(e) => e.key === "Escape" && onClose()}
-        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 space-y-3"
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 space-y-3 max-h-[92vh] overflow-y-auto"
       >
         <p className="text-lg font-bold text-gray-900">{initial?._id ? "Edit supplier" : "Add supplier"}</p>
         <label className="text-xs text-gray-500 flex flex-col gap-1">
@@ -58,13 +62,41 @@ const SupplierDialog = ({ initial, onClose }) => {
             <input value={form.phone} onChange={set("phone")} className={field} placeholder="09XX XXX XXXX" />
           </label>
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-xs text-gray-500 flex flex-col gap-1">
+            Telegram
+            <input value={form.telegram} onChange={set("telegram")} className={field} placeholder="@username" />
+          </label>
+          <label className="text-xs text-gray-500 flex flex-col gap-1">
+            Preferred contact
+            <select value={form.preferred_contact} onChange={set("preferred_contact")} className={`${field} bg-white`}>
+              <option value="email">Email</option>
+              <option value="phone">Phone call</option>
+              <option value="sms">SMS</option>
+              <option value="telegram">Telegram</option>
+              <option value="messenger">Messenger</option>
+            </select>
+          </label>
+          <label className="text-xs text-gray-500 flex flex-col gap-1">
+            Usual delivery time (days)
+            <input type="number" min={0} max={90} value={form.lead_time_days} onChange={set("lead_time_days")} className={field} />
+          </label>
+          <label className="text-xs text-gray-500 flex flex-col gap-1">
+            Delivery days
+            <input value={form.delivery_days} onChange={set("delivery_days")} className={field} placeholder="e.g. Tue, Fri" />
+          </label>
+          <label className="text-xs text-gray-500 flex flex-col gap-1">
+            Minimum order (₱)
+            <input type="number" min={0} value={form.min_order_value} onChange={set("min_order_value")} className={field} />
+          </label>
+        </div>
         <label className="text-xs text-gray-500 flex flex-col gap-1">
-          Usual delivery time (days)
-          <input type="number" min={0} max={90} value={form.lead_time_days} onChange={set("lead_time_days")} className={field} />
+          Address
+          <input value={form.address} onChange={set("address")} className={field} />
         </label>
         <label className="text-xs text-gray-500 flex flex-col gap-1">
           Notes
-          <textarea rows={2} value={form.notes} onChange={set("notes")} className={field} placeholder="e.g. delivers Tue/Fri, minimum order ₱2,000" />
+          <textarea rows={2} value={form.notes} onChange={set("notes")} className={field} placeholder="Anything else to remember" />
         </label>
         {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
         <div className="flex justify-end gap-2 pt-1">

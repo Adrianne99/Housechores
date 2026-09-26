@@ -1,6 +1,6 @@
 import { useState, useRef, useContext } from "react";
 import { Link } from "react-router";
-import { Banknote, CreditCard, KeyRound, Smartphone, X } from "lucide-react";
+import { Banknote, CreditCard, KeyRound, Landmark, Smartphone, X } from "lucide-react";
 import axios from "axios";
 
 import { Button } from "../buttons";
@@ -9,14 +9,12 @@ import { discount_approval } from "../../utils/pricing";
 import { ROLE_PREFIX } from "../../constants/navigation";
 import { cn } from "../../utils/utils";
 import { enqueue, is_network_error, new_client_ref } from "../../lib/offline_sales";
+import { useStoreSettings } from "../../hooks/use_settings";
+import { DEFAULT_PAYMENT_METHODS, method_key } from "../../utils/format";
 
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000];
 
-const METHODS = [
-  { key: "cash", label: "Cash", icon: Banknote },
-  { key: "gcash", label: "GCash", icon: Smartphone },
-  { key: "card", label: "Card", icon: CreditCard },
-];
+const ICONS = { cash: Banknote, card: CreditCard, bank_transfer: Landmark };
 
 const APPROVAL_TEXT = {
   senior_pwd: "Senior/PWD discounts need a manager's approval.",
@@ -57,6 +55,11 @@ export const ChargeModal = (props) => (props.open ? <ChargeModalBody {...props} 
 const ChargeModalBody = ({ onClose, total, subtotal, totals, items, discount, branch, onSuccess }) => {
   const { userData } = useContext(AppContext);
   const is_admin = userData?.role === "admin";
+  const methods = (useStoreSettings()?.payment_methods ?? DEFAULT_PAYMENT_METHODS).map((label) => ({
+    key: method_key(label),
+    label,
+    icon: ICONS[method_key(label)] ?? Smartphone,
+  }));
   const [method, setMethod] = useState("cash");
   const [tendered, setTendered] = useState("");
   const [reference, setReference] = useState("");
@@ -166,7 +169,7 @@ const ChargeModalBody = ({ onClose, total, subtotal, totals, items, discount, br
           </div>
 
           <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Payment method">
-            {METHODS.map(({ key, label, icon: Icon }) => (
+            {methods.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 type="button"
@@ -232,7 +235,7 @@ const ChargeModalBody = ({ onClose, total, subtotal, totals, items, discount, br
           ) : (
             <div className="space-y-2">
               <label htmlFor="reference" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                {method === "gcash" ? "GCash reference no." : "Card approval code"}{" "}
+                {methods.find((m) => m.key === method)?.label} reference no.{" "}
                 <span className="normal-case font-normal text-gray-400">(optional)</span>
               </label>
               <input
@@ -241,7 +244,7 @@ const ChargeModalBody = ({ onClose, total, subtotal, totals, items, discount, br
                 autoFocus
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                placeholder={method === "gcash" ? "e.g. 1012 345 678901" : "e.g. 123456"}
+                placeholder="e.g. 1012 345 678901"
                 className="w-full px-4 py-3 text-base border-2 border-gray-200 rounded-xl outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400"
               />
               <p className="text-xs text-gray-400">Confirm the payment went through before completing the sale.</p>

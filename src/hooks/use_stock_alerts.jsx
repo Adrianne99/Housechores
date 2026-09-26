@@ -14,7 +14,10 @@ export const useStockAlerts = () => {
     () =>
       products
         .filter((p) => p.stock_management.current_stock <= p.stock_management.reorder_level)
-        .map((p) => ({ ...p, level: p.stock_management.current_stock <= 0 ? "out" : "low" }))
+        .map((p) => {
+          const { current_stock, critical_level = 0 } = p.stock_management;
+          return { ...p, level: current_stock <= 0 ? "out" : current_stock <= critical_level ? "critical" : "low" };
+        })
         .sort((a, b) => a.stock_management.current_stock - b.stock_management.current_stock),
     [products],
   );

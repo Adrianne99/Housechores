@@ -302,7 +302,7 @@ export default function POSPage() {
           </div>
         ) : (
           <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-            <Wallet size={16} /> Your cash drawer is closed — open it to accept cash payments. GCash and card still work.
+            <Wallet size={16} /> Your cash drawer is closed — open it to accept cash payments. Other payment methods still work.
             <Link to={drawer_link} className="ml-auto font-semibold underline">Open drawer</Link>
           </div>
         )
