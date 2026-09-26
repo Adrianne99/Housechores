@@ -8,7 +8,7 @@ import { TextInput } from "@/components/input";
 import { Button } from "@/components/buttons";
 import { AppContext } from "@/context/app_context";
 import { cn } from "@/utils/utils";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.svg";
 import Toast from "../../components/toast";
 
 // Ensure credentials for session handling
@@ -134,7 +134,7 @@ const Login = () => {
       <div className="relative z-10 w-full max-w-md transition-all duration-300">
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="Logo" className="w-32 mb-4 object-contain" />
+          <img src={logo} alt="QuickLedge" className="w-32 mb-4 object-contain" />
           <H2 className="text-text-main font-bold tracking-tight">
             Welcome Back
           </H2>

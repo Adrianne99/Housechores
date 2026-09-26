@@ -7,7 +7,7 @@ import { H2, Paragraph } from "@/components/texts";
 import { TextInput } from "@/components/input";
 import { Button } from "@/components/buttons";
 import { cn } from "@/utils/utils";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.svg";
 import Toast from "@/components/toast";
 
 // Ensure all requests include cookies
@@ -145,7 +145,7 @@ const Register = () => {
 
       <div className="relative z-10 w-full max-w-md transition-all duration-300">
         <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="Logo" className="w-28 mb-4 object-contain" />
+          <img src={logo} alt="QuickLedge" className="w-28 mb-4 object-contain" />
           <H2 className="text-text-main font-bold">Create Account</H2>
           <Paragraph className="text-text-muted text-center">
             Join us to start your journey

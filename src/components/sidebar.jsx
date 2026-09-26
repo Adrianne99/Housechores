@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { useContext, useState, useMemo } from "react";
 import axios from "axios";
 import { AppContext } from "@/context/app_context";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.svg";
 import { H6, Paragraph } from "./texts";
 import Toast from "@/components/toast";
 import { LogOut } from "lucide-react";
@@ -102,7 +102,7 @@ const Sidebar = () => {
       )}
 
       <div className="px-2 mb-6 flex justify-center lg:justify-start">
-        <img src={logo} alt="Logo" className="w-32 lg:block hidden" />
+        <img src={logo} alt="QuickLedge" className="w-32 lg:block hidden" />
         <div className="lg:hidden block size-10 bg-primary/10 rounded-lg" />
       </div>
 

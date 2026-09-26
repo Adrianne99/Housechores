@@ -8,7 +8,7 @@ import useOtpInput from "@/hooks/use_otp_input";
 import Toast from "@/components/toast";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { cn } from "@/utils/utils";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.svg";
 import { Countdown } from "@/components/timer";
 import { useNow } from "@/hooks/use_now";
 
@@ -210,7 +210,7 @@ const Reset_password = () => {
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-second-gradient/40 blur-[120px] pointer-events-none" />
       <div className="relative z-10 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="Logo" className="w-32 mb-4 object-contain" />
+          <img src={logo} alt="QuickLedge" className="w-32 mb-4 object-contain" />
           <H2 className="text-text-main font-bold tracking-tight">
             Account Recovery
           </H2>

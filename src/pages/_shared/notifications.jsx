@@ -12,6 +12,7 @@ import { cn } from "../../utils/utils";
 const TABS = [
   { key: "all", label: "All" },
   { key: "unread", label: "Unread" },
+  { key: "requests", label: "Restock requests", types: ["restock_request"] },
   { key: "sales", label: "Sales", types: ["sale", "void", "refund", "discount", "drawer"] },
   { key: "stock", label: "Stock", types: ["low_stock", "out_of_stock", "restock_request", "purchase", "delivery", "transfer", "expiry"] },
   { key: "schedule", label: "Schedule", types: ["schedule"] },
@@ -42,7 +43,7 @@ export default function NotificationsPage() {
             </button>
           )
         }
-        title="Latest 30"
+        title="Latest 30 (plus any unread restock requests)"
       >
         <div className="flex flex-wrap gap-2 mb-4">
           {TABS.map((x) => (

@@ -68,6 +68,9 @@ export const NotificationItem = ({ n, onOpen, compact = false }) => {
   );
 };
 
+// Unread restock requests from cashiers stay at the top of the bell.
+const pinned = (n) => n.type === "restock_request" && !n.read_at;
+
 export const NotificationBell = () => {
   const ctx = useNotifications();
   const { userData } = useContext(AppContext);
@@ -134,7 +137,8 @@ export const NotificationBell = () => {
                 You're all caught up.
               </p>
             ) : (
-              notifications
+              [...notifications]
+                .sort((a, b) => pinned(b) - pinned(a))
                 .slice(0, 8)
                 .map((n) => <NotificationItem key={n._id} n={n} onOpen={open_item} compact />)
             )}
