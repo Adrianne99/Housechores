@@ -168,7 +168,8 @@ const ChargeModalBody = ({ onClose, total, subtotal, totals, items, discount, br
             <p className="text-4xl font-bold text-indigo-600 tabular-nums">₱{total.toFixed(2)}</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Payment method">
+          {/* Cash-only stores (one method in Store Settings) skip the picker. */}
+          <div className={cn("grid grid-cols-3 gap-2", methods.length < 2 && "hidden")} role="radiogroup" aria-label="Payment method">
             {methods.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
