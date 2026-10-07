@@ -27,9 +27,10 @@ export const ProductSearch = ({
   );
 
 
+  // onProductPicked(product, pack?) — a pack row adds the pack.
   const handlePick = useCallback(
-    (product) => {
-      onProductPicked(product);
+    (product, pack = null) => {
+      onProductPicked(product, pack);
       setQuery("");
       setShowSuggestions(false);
       inputRef.current?.focus();
@@ -44,11 +45,11 @@ export const ProductSearch = ({
         e.preventDefault();
         const exact = findByBarcode(query);
         if (exact) {
-          handlePick(exact);
+          handlePick(exact.product, exact.pack);
           return;
         }
         if (suggestions[0]) {
-          handlePick(suggestions[0]);
+          handlePick(suggestions[0].product, suggestions[0].pack);
         }
       }
       if (e.key === "Escape") {
@@ -83,23 +84,24 @@ export const ProductSearch = ({
       {/* Suggestions dropdown */}
       {showSuggestions && suggestions.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
-          {suggestions.map((p) => (
+          {suggestions.map(({ key, product: p, pack }) => (
             <button
-              key={p._id}
-              onClick={() => handlePick(p)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-indigo-50 transition-colors text-left border-b border-gray-50 last:border-b-0"
+              key={key}
+              onClick={() => handlePick(p, pack)}
+              className={`w-full flex items-center justify-between px-4 py-3 hover:bg-indigo-50 transition-colors text-left border-b border-gray-50 last:border-b-0 ${pack ? "pl-8 bg-gray-50/60" : ""}`}
             >
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-gray-900">
-                  {p.name}
+                  {pack ? `${pack.name} of ${pack.quantity}` : p.name}
                 </span>
                 <span className="text-xs text-gray-400">
-                  {p.brand} · {p.barcode}
+                  {pack ? `${p.name}${pack.barcode ? ` · ${pack.barcode}` : ""}` : `${p.brand} · ${p.barcode}`}
                 </span>
               </div>
               <div className="flex flex-col items-end">
                 <span className="text-sm font-bold text-indigo-600">
-                  ₱{p.pricing.selling_price.toFixed(2)}
+                  ₱{(pack ? pack.selling_price : p.pricing.selling_price).toFixed(2)}
+                  {p.sold_by_weight && <span className="text-xs font-normal text-gray-400"> / {p.unit || "kg"}</span>}
                 </span>
                 <span
                   className={`text-xs ${

@@ -87,6 +87,12 @@ export const ZReportModal = ({ sessionId, onClose }) => {
               <Row label="VAT-exempt sales" value={peso(z.vat_exempt_sales)} />
               <Row label={`Voided (${z.voided.count})`} value={peso(z.voided.total)} />
               <Row label={`Refunds (${z.refunds?.count ?? 0})`} value={peso(z.refunds?.total)} />
+              {z.cart_removals && (
+                <Row label={`Removed before payment (${z.cart_removals.count})`} value={peso(z.cart_removals.amount)} />
+              )}
+              {z.cart_removals?.after_total_shown > 0 && (
+                <Row label="↳ after the total was shown" value={z.cart_removals.after_total_shown} />
+              )}
             </div>
 
             <div className="border-t border-dashed border-gray-300 py-2">

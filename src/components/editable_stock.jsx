@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pencil, X } from "lucide-react";
 import { Button } from "./buttons";
-import { peso } from "../utils/format";
+import { is_qty, peso, round_qty } from "../utils/format";
 import axios from "axios";
 
 // Why the count changed. Deliveries and sales update stock on their own,
@@ -20,7 +20,7 @@ const input =
 const label = "text-xs font-semibold text-gray-500 uppercase tracking-wide";
 
 // Mounted only while open, so it starts from the current values.
-const StockDialog = ({ productId, name, cost = 0, stock_management, onUpdate, onClose }) => {
+const StockDialog = ({ productId, name, cost = 0, by_weight = false, stock_management, onUpdate, onClose }) => {
   const before = Number(stock_management.current_stock) || 0;
   const [form, setForm] = useState({
     current_stock: before,
@@ -37,7 +37,7 @@ const StockDialog = ({ productId, name, cost = 0, stock_management, onUpdate, on
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
   const after = form.current_stock === "" ? before : Number(form.current_stock);
-  const change = after - before;
+  const change = round_qty(after - before);
   const reasons = ADJUSTMENT_REASONS.filter((r) => change <= 0 || r.both);
   const reason_ok = change === 0 || reasons.some((r) => r.key === form.reason);
 
@@ -45,7 +45,9 @@ const StockDialog = ({ productId, name, cost = 0, stock_management, onUpdate, on
     if (form.current_stock === "" || form.reorder_level === "") {
       return setError("Stock and reorder level are required.");
     }
-    if (!Number.isInteger(after) || after < 0) return setError("Stock must be a whole number of 0 or more.");
+    if (!is_qty(after, by_weight, true)) {
+      return setError(by_weight ? "Stock must be 0 or more, up to 3 decimals." : "Stock must be a whole number of 0 or more.");
+    }
     if (!reason_ok) return setError("Choose why the stock count changed.");
     if (change !== 0 && form.reason === "other" && !form.note.trim()) {
       return setError("Add a note explaining the change.");
@@ -103,7 +105,7 @@ const StockDialog = ({ productId, name, cost = 0, stock_management, onUpdate, on
               <span className={label}>
                 Actual count <span className="text-red-400">*</span>
               </span>
-              <input autoFocus type="number" min={0} step={1} value={form.current_stock} onChange={set("current_stock")} className={input} />
+              <input autoFocus type="number" min={0} step={by_weight ? 0.001 : 1} value={form.current_stock} onChange={set("current_stock")} className={input} />
             </label>
           </div>
 
@@ -187,7 +189,7 @@ const StockDialog = ({ productId, name, cost = 0, stock_management, onUpdate, on
   );
 };
 
-export const EditableStock = ({ productId, name, cost, stock_management, onUpdate }) => {
+export const EditableStock = ({ productId, name, cost, by_weight, stock_management, onUpdate }) => {
   const [editing, setEditing] = useState(false);
   return (
     <>
@@ -207,6 +209,7 @@ export const EditableStock = ({ productId, name, cost, stock_management, onUpdat
           productId={productId}
           name={name}
           cost={cost}
+          by_weight={by_weight}
           stock_management={stock_management}
           onUpdate={onUpdate}
           onClose={() => setEditing(false)}

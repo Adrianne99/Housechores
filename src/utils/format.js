@@ -8,6 +8,21 @@ export const peso = (n) =>
 
 export const num = (n) => Number(n ?? 0).toLocaleString("en-PH");
 
+// Quantities: whole units, or kilos to the gram (no float noise).
+export const round_qty = (n) => Math.round(Number(n ?? 0) * 1000) / 1000;
+// Valid quantity: whole units, or kilos to the gram when by_weight.
+// zero: allow 0 (stock counts).
+export const is_qty = (n, by_weight = false, zero = false) => {
+  const q = Number(n);
+  if (n === "" || n === null || n === undefined || !Number.isFinite(q) || (zero ? q < 0 : q <= 0)) return false;
+  return by_weight ? round_qty(q) === q : Number.isInteger(q);
+};
+// What a typed quantity counts as (0 if not valid yet).
+export const qty_value = (n, by_weight = false) => (is_qty(n, by_weight) ? Number(n) : 0);
+// "3", or "0.385 kg" for a line sold by weight.
+export const qty_label = (item) =>
+  item?.by_weight ? `${round_qty(item.quantity)} ${item.product_snapshot?.unit || item.unit || "kg"}` : String(round_qty(item?.quantity));
+
 export const ROLE_LABELS = {
   admin: "Administrator",
   branch_manager: "Branch Manager",

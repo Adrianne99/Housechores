@@ -37,6 +37,7 @@ const ManagerInventory = () => (
         stock: true,
         supplier: true,
         cost_price: true,
+        selling_options: true, // pack sizes, sold by weight
       },
     }}
   />

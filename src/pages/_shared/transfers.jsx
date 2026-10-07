@@ -7,7 +7,7 @@ import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { AppContext } from "../../context/app_context";
 import { useProducts } from "../../hooks/use_product_lookup";
 import { get, queryClient, error_message } from "../../lib/query";
-import { date_of, peso, time_of } from "../../utils/format";
+import { date_of, is_qty, peso, time_of } from "../../utils/format";
 import { cn } from "../../utils/utils";
 
 const STATUS = {
@@ -38,7 +38,7 @@ const NewTransfer = ({ branches, my_branch, is_admin, onDone }) => {
       .slice(0, 6);
   }, [query, products, lines]);
   const targets = branches.filter((b) => b._id !== from);
-  const valid = to && lines.length && lines.every((l) => Number.isInteger(Number(l.quantity)) && Number(l.quantity) > 0 && Number(l.quantity) <= l.available);
+  const valid = to && lines.length && lines.every((l) => is_qty(l.quantity, l.by_weight) && Number(l.quantity) <= l.available);
 
   const send = async () => {
     setBusy(true);
@@ -85,7 +85,7 @@ const NewTransfer = ({ branches, my_branch, is_admin, onDone }) => {
                 <button
                   type="button"
                   onClick={() => {
-                    setLines((ls) => [...ls, { inventory_id: p._id, name: p.name, unit: p.unit, available: p.stock_management.current_stock, quantity: 1 }]);
+                    setLines((ls) => [...ls, { inventory_id: p._id, name: p.name, unit: p.unit, by_weight: !!p.sold_by_weight, available: p.stock_management.current_stock, quantity: 1 }]);
                     setQuery("");
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-indigo-50 flex justify-between gap-3 text-sm"
@@ -107,7 +107,8 @@ const NewTransfer = ({ branches, my_branch, is_admin, onDone }) => {
               <span className="flex-1 font-medium text-gray-900">{l.name} <span className="text-xs font-normal text-gray-400">· {l.available} available</span></span>
               <input
                 type="number"
-                min={1}
+                min={l.by_weight ? 0.001 : 1}
+                step={l.by_weight ? 0.001 : 1}
                 max={l.available}
                 value={l.quantity}
                 onChange={(e) => setLines((ls) => ls.map((x) => (x.inventory_id === l.inventory_id ? { ...x, quantity: e.target.value } : x)))}

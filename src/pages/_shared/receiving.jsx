@@ -10,7 +10,7 @@ import { ReceiptScanner } from "../../components/receipt_scanner";
 import Header from "../../components/header";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
 import { AppContext } from "../../context/app_context";
-import { date_of, peso, time_of } from "../../utils/format";
+import { date_of, is_qty, peso, qty_value, round_qty, time_of } from "../../utils/format";
 
 const c = (n) => Math.round(Number(n || 0) * 100);
 
@@ -20,7 +20,8 @@ const line_from = (p) => ({
   unit: p.unit,
   current: p.stock_management.current_stock,
   quantity: 1,
-  unit_cost: p.pricing.cost_per_unit,
+  // The supplier's last price is the best guess for this delivery.
+  unit_cost: p.pricing.last_cost ?? p.pricing.cost_per_unit,
 });
 
 export default function Receiving() {
@@ -126,13 +127,16 @@ export default function Receiving() {
 
   const set_line = (id, key, value) =>
     setLines((ls) => ls.map((l) => (l.inventory_id === id ? { ...l, [key]: value } : l)));
+  // Products sold by weight are received in kilos (decimals allowed).
+  const weighed = useMemo(() => new Set(products.filter((p) => p.sold_by_weight).map((p) => p._id)), [products]);
+  const qty_of = (l) => qty_value(l.quantity, weighed.has(l.inventory_id));
 
-  const total_units = lines.reduce((t, l) => t + (Math.floor(Number(l.quantity)) || 0), 0);
-  const total_cost = lines.reduce((t, l) => t + c(l.unit_cost) * (Math.floor(Number(l.quantity)) || 0), 0) / 100;
+  const total_units = round_qty(lines.reduce((t, l) => t + qty_of(l), 0));
+  const total_cost = Math.round(lines.reduce((t, l) => t + c(l.unit_cost) * qty_of(l), 0)) / 100;
   const valid =
     supplier.trim() &&
     lines.length > 0 &&
-    lines.every((l) => Number.isInteger(Number(l.quantity)) && Number(l.quantity) > 0 && Number(l.unit_cost) >= 0);
+    lines.every((l) => is_qty(l.quantity, weighed.has(l.inventory_id)) && Number(l.unit_cost) >= 0);
 
   const submit = async () => {
     setSaving(true);
@@ -226,8 +230,10 @@ export default function Receiving() {
             <label className="flex items-start gap-2 text-sm text-gray-600">
               <input type="checkbox" checked={updateCost} onChange={(e) => setUpdateCost(e.target.checked)} className="mt-1" />
               <span>
-                Update cost prices from this delivery
-                <span className="block text-xs text-gray-400">Selling prices stay the same; markup is recalculated.</span>
+                Average this delivery into cost prices
+                <span className="block text-xs text-gray-400">
+                  Cost becomes the average of the stock on hand and this delivery. Selling prices stay the same; markup is recalculated.
+                </span>
               </span>
             </label>
           </div>
@@ -298,7 +304,7 @@ export default function Receiving() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {lines.map((l) => {
-                    const q = Math.floor(Number(l.quantity)) || 0;
+                    const q = qty_of(l);
                     return (
                       <tr key={l.inventory_id}>
                         <td className="py-2 font-medium text-gray-900">
@@ -322,7 +328,7 @@ export default function Receiving() {
                           {cur(l) ?? "—"} → <span className="font-semibold text-green-600">{cur(l) === null ? `+${q}` : cur(l) + q}</span> {l.unit}
                         </td>
                         <td className="py-2">
-                          <input type="number" min={1} step={1} inputMode="numeric" aria-label={`Quantity of ${l.name}`} value={l.quantity} onChange={(e) => set_line(l.inventory_id, "quantity", e.target.value)} className="w-20 px-2 py-1.5 border border-gray-200 rounded-md" />
+                          <input type="number" min={weighed.has(l.inventory_id) ? 0.001 : 1} step={weighed.has(l.inventory_id) ? 0.001 : 1} inputMode={weighed.has(l.inventory_id) ? "decimal" : "numeric"} aria-label={`Quantity of ${l.name}`} value={l.quantity} onChange={(e) => set_line(l.inventory_id, "quantity", e.target.value)} className="w-20 px-2 py-1.5 border border-gray-200 rounded-md" />
                           {l.expected > q && <p className="mt-0.5 text-xs font-semibold text-amber-600">Short {l.expected - q} of {l.expected}</p>}
                         </td>
                         <td className="py-2">
@@ -394,7 +400,12 @@ export default function Receiving() {
                     {d.items.map((i) => (
                       <div key={i.inventory} className="flex justify-between gap-3">
                         <span className="text-gray-700">{i.quantity} × {i.name} @ {peso(i.unit_cost)}</span>
-                        <span className="text-gray-500">stock {i.prev_stock} → {i.new_stock}</span>
+                        <span className="text-gray-500 text-right">
+                          stock {i.prev_stock} → {i.new_stock}
+                          {i.new_cost != null && c(i.new_cost) !== c(i.prev_cost) && (
+                            <span className="block">avg cost {peso(i.prev_cost)} → {peso(i.new_cost)}</span>
+                          )}
+                        </span>
                       </div>
                     ))}
                     {d.notes && <p className="text-gray-500 pt-1">Note: {d.notes}</p>}

@@ -2,7 +2,7 @@ import { useContext, useMemo, useState } from "react";
 import axios from "axios";
 import { KeyRound, RotateCcw, X } from "lucide-react";
 import { AppContext } from "../../context/app_context";
-import { peso } from "../../utils/format";
+import { peso, qty_label, round_qty } from "../../utils/format";
 
 const REASONS = ["Damaged", "Expired", "Wrong item", "Customer changed mind", "Other"];
 const c = (n) => Math.round(Number(n) * 100);
@@ -15,7 +15,7 @@ const refund_preview = (order, qty) => {
   order.items.forEach((item, line) => {
     const q = qty[line] ?? 0;
     if (!q) return;
-    const remaining = item.quantity - (item.refunded_qty ?? 0);
+    const remaining = round_qty(item.quantity - (item.refunded_qty ?? 0));
     const line_value_c = Math.round(c(item.subtotal) * ratio);
     total_c +=
       q === remaining
@@ -40,8 +40,11 @@ export const RefundModal = ({ order, onClose, onSuccess }) => {
   const selected = Object.entries(qty).filter(([, q]) => q > 0);
   const method = order.payment?.method ?? "cash";
 
-  const set_qty = (line, value, max) =>
-    setQty((q) => ({ ...q, [line]: Math.max(0, Math.min(max, Math.floor(Number(value) || 0))) }));
+  // Whole units, or kilos to the gram for weighed lines.
+  const set_qty = (line, value, max, by_weight) => {
+    const n = Number(value) || 0;
+    setQty((q) => ({ ...q, [line]: Math.max(0, Math.min(max, by_weight ? round_qty(n) : Math.floor(n))) }));
+  };
 
   const submit = async () => {
     setBusy(true);
@@ -88,14 +91,14 @@ export const RefundModal = ({ order, onClose, onSuccess }) => {
         <div className="px-6 py-5 overflow-y-auto flex-1 space-y-4">
           <div className="border border-gray-100 rounded-xl divide-y divide-gray-50">
             {order.items.map((item, line) => {
-              const remaining = item.quantity - (item.refunded_qty ?? 0);
+              const remaining = round_qty(item.quantity - (item.refunded_qty ?? 0));
               return (
                 <div key={line} className="px-3 py-2.5 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-900 truncate">{item.product_snapshot?.name}</p>
                     <p className="text-xs text-gray-400">
-                      Bought {item.quantity}
-                      {item.refunded_qty ? ` · ${item.refunded_qty} already refunded` : ""}
+                      Bought {qty_label(item)}
+                      {item.refunded_qty ? ` · ${round_qty(item.refunded_qty)} already refunded` : ""}
                     </p>
                     {remaining > 0 && item.inventory && (qty[line] ?? 0) > 0 && (
                       <label className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
@@ -113,11 +116,11 @@ export const RefundModal = ({ order, onClose, onSuccess }) => {
                       type="number"
                       min={0}
                       max={remaining}
-                      step={1}
-                      inputMode="numeric"
+                      step={item.by_weight ? 0.001 : 1}
+                      inputMode={item.by_weight ? "decimal" : "numeric"}
                       aria-label={`Quantity to refund of ${item.product_snapshot?.name}`}
                       value={qty[line] ?? 0}
-                      onChange={(e) => set_qty(line, e.target.value, remaining)}
+                      onChange={(e) => set_qty(line, e.target.value, remaining, item.by_weight)}
                       className="w-16 text-center px-2 py-1.5 text-sm border border-gray-200 rounded-lg"
                     />
                   ) : (

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import axios from "axios";
 import { AlertTriangle, Camera, Check, FileText, ImageUp, Plus, ScanLine, Trash2, X } from "lucide-react";
 import { error_message, queryClient } from "../lib/query";
-import { peso } from "../utils/format";
+import { is_qty, peso } from "../utils/format";
 import { cn } from "../utils/utils";
 import { AUTO_MATCH, markup_of, match_products, parse_receipt, suggest_price } from "../utils/receipt";
 
@@ -70,7 +70,9 @@ const make_row = (line, products, n) => {
 // Default price choice: follow a cost increase, keep the price on a drop.
 const pricing_for = (row, product) => {
   if (!product) return null;
-  const old_cost = product.pricing.cost_per_unit;
+  // Compare with what the supplier charged last time (cost_per_unit is
+  // the average cost of the stock on hand).
+  const old_cost = product.pricing.last_cost ?? product.pricing.cost_per_unit;
   const old_price = product.pricing.selling_price;
   if (c(row.unit_cost) === c(old_cost) || !(Number(row.unit_cost) > 0)) return null;
   const suggested = suggest_price(row.unit_cost, product.pricing.markup_value);
@@ -253,8 +255,9 @@ export const ReceiptScanner = ({ products, branch, onApply, onClose }) => {
 
   const ready = rows.filter((r) => r.include && r.inventory_id);
   const unmatched = rows.filter((r) => r.include && !r.inventory_id).length;
-  const bad = ready.some((r) => !(Number.isInteger(Number(r.quantity)) && Number(r.quantity) > 0) || !(Number(r.unit_cost) >= 0));
-  const total = ready.reduce((t, r) => t + c(r.unit_cost) * (Number(r.quantity) || 0), 0) / 100;
+  // Weighed products may come in kilos with decimals.
+  const bad = ready.some((r) => !is_qty(r.quantity, !!by_id.get(r.inventory_id)?.sold_by_weight) || !(Number(r.unit_cost) >= 0));
+  const total = Math.round(ready.reduce((t, r) => t + c(r.unit_cost) * (Number(r.quantity) || 0), 0)) / 100;
 
   const apply = () => {
     onApply({
@@ -423,7 +426,7 @@ export const ReceiptScanner = ({ products, branch, onApply, onClose }) => {
                         </div>
                         <label className="text-[11px] text-gray-500 flex flex-col gap-0.5">
                           Qty
-                          <input type="number" min={1} step={1} value={r.quantity} onChange={(e) => set_row(r.id, { quantity: e.target.value })} aria-label={`Quantity for ${r.receipt_name}`} className={cn(field, "w-20")} />
+                          <input type="number" min={0} step="any" value={r.quantity} onChange={(e) => set_row(r.id, { quantity: e.target.value })} aria-label={`Quantity for ${r.receipt_name}`} className={cn(field, "w-20")} />
                         </label>
                         <label className="text-[11px] text-gray-500 flex flex-col gap-0.5">
                           Unit cost

@@ -1,7 +1,7 @@
 // Thermal receipt (58 mm / 80 mm) built as plain HTML and printed from a
 // hidden frame, so only the receipt prints — sized to the paper roll.
 
-import { method_label } from "./format";
+import { method_label, qty_label } from "./format";
 
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
@@ -38,7 +38,7 @@ export const receipt_html = (order, settings) => {
   const items = (order.items ?? [])
     .map(
       (i) =>
-        `<div class="item">${esc(i.product_snapshot?.name)}</div>${row(`&nbsp;&nbsp;${i.quantity} × ${money(i.unit_price)}`, money(i.subtotal))}`,
+        `<div class="item">${esc(i.product_snapshot?.name)}</div>${row(`&nbsp;&nbsp;${esc(qty_label(i))} × ${money(i.unit_price)}`, money(i.subtotal))}`,
     )
     .join("");
   const p = order.payment ?? {};

@@ -1,6 +1,7 @@
 import { X, User, Store, Clock, XCircle, RotateCcw } from "lucide-react";
 import { Button } from "../buttons";
 import { StatusBadge } from "../badge";
+import { qty_label, round_qty } from "../../utils/format";
 
 export const OrderDetailModal = ({ open, onClose, order, canVoid, onVoid, onRefund }) => {
   if (!open || !order) return null;
@@ -105,7 +106,7 @@ export const OrderDetailModal = ({ open, onClose, order, canVoid, onVoid, onRefu
                       )}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {item.quantity} × ₱{item.unit_price.toFixed(2)}
+                      {qty_label(item)} × ₱{item.unit_price.toFixed(2)}
                     </p>
                   </div>
                   <p className="text-sm font-medium text-gray-900 tabular-nums shrink-0 ml-2">
@@ -168,7 +169,7 @@ export const OrderDetailModal = ({ open, onClose, order, canVoid, onVoid, onRefu
                     <span>−₱{r.amount.toFixed(2)} ({r.method})</span>
                   </div>
                   <p className="text-orange-700 mt-0.5">
-                    {r.items.map((i) => `${i.quantity}× ${i.name}${i.restocked ? "" : " (not restocked)"}`).join(", ")}
+                    {r.items.map((i) => `${round_qty(i.quantity)}× ${i.name}${i.restocked ? "" : " (not restocked)"}`).join(", ")}
                   </p>
                   <p className="text-orange-600 mt-0.5">
                     "{r.reason}" · by {r.by_name}

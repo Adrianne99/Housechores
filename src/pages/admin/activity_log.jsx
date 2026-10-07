@@ -14,6 +14,7 @@ import {
   Users,
   Wallet,
   Truck,
+  ShoppingCart,
 } from "lucide-react";
 import Header from "../../components/header";
 import { Panel, EmptyState, Skeleton } from "../../components/panel";
@@ -26,6 +27,7 @@ const CATEGORIES = [
   { key: "stock", label: "Stock", icon: Boxes },
   { key: "price", label: "Prices", icon: Tag },
   { key: "order", label: "Voids", icon: ReceiptText },
+  { key: "cart", label: "Removed from cart", icon: ShoppingCart },
   { key: "refund", label: "Refunds", icon: RotateCcw },
   { key: "discount", label: "Discounts", icon: BadgePercent },
   { key: "drawer", label: "Cash drawer", icon: Wallet },
@@ -39,6 +41,7 @@ const CATEGORY_TONE = {
   stock: "bg-sky-50 text-sky-600",
   price: "bg-amber-50 text-amber-600",
   order: "bg-red-50 text-red-600",
+  cart: "bg-rose-50 text-rose-600",
   refund: "bg-orange-50 text-orange-600",
   discount: "bg-green-50 text-green-600",
   drawer: "bg-emerald-50 text-emerald-700",

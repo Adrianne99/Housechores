@@ -359,7 +359,28 @@ const Step1 = ({
         />
       </Field>
       <Field label="Unit" required error={errors.unit}>
-        <UnitGrid selected={form.unit} onSelect={(v) => setField("unit", v)} />
+        <UnitGrid
+          selected={form.unit}
+          onSelect={(v) => {
+            setField("unit", v);
+            // Kilos are usually weighed; the checkbox below can undo it.
+            setField("sold_by_weight", v === "Kg");
+          }}
+        />
+        <label className="mt-2 flex items-start gap-2 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={!!form.sold_by_weight}
+            onChange={(e) => setField("sold_by_weight", e.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            Sold by weight
+            <span className="block text-xs text-gray-400">
+              Cashiers enter the weight or a peso amount; stock is kept to the gram. Price is per {form.unit || "unit"}.
+            </span>
+          </span>
+        </label>
       </Field>
     </>
   );

@@ -20,9 +20,9 @@ const to_pesos = (c) => c / 100;
 // VAT portion contained in a VAT-inclusive amount (in centavos).
 const vat_in = (cents) => Math.round((cents * VAT_RATE) / (1 + VAT_RATE));
 
-// Sum of line items → subtotal in pesos.
+// Line total in pesos, rounded to the centavo (kilos can have decimals).
 export const line_subtotal = (unit_price, quantity) =>
-  to_pesos(to_cents(unit_price) * Number(quantity));
+  to_pesos(Math.round(to_cents(unit_price) * Number(quantity)));
 
 /**
  * Compute order totals.

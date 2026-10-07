@@ -2,6 +2,7 @@ import { CheckCircle2, CloudOff, Receipt, Printer } from "lucide-react";
 import { Button } from "../buttons";
 import { useStoreSettings } from "../../hooks/use_settings";
 import { print_receipt, receipt_lines } from "../../utils/receipt_print";
+import { qty_label } from "../../utils/format";
 
 const money = (n) => `₱${Number(n ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -52,7 +53,7 @@ export const ReceiptOverlay = ({ open, order, onNewSale }) => {
             {order.items.map((item, idx) => (
               <div key={idx}>
                 <p className="truncate">{item.product_snapshot?.name}</p>
-                <Row label={`  ${item.quantity} × ${money(item.unit_price)}`} value={money(item.subtotal)} className="pl-3 text-gray-500" />
+                <Row label={`  ${qty_label(item)} × ${money(item.unit_price)}`} value={money(item.subtotal)} className="pl-3 text-gray-500" />
               </div>
             ))}
             <div className="border-t border-dashed border-gray-300" />

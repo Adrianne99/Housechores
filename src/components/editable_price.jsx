@@ -105,7 +105,7 @@ export const EditablePrice = ({ productId, pricing, field, onUpdate }) => {
             </div>
             <div className="px-5 py-4 flex flex-col gap-4">
               {[
-                { label: "Cost per Unit", field: "cost_per_unit", prefix: "₱" },
+                { label: "Average cost per unit", field: "cost_per_unit", prefix: "₱" },
                 { label: "Markup %", field: "markup_value", suffix: "%" },
               ].map(({ label, field, prefix, suffix }) => (
                 <div key={field} className="flex flex-col gap-1.5">

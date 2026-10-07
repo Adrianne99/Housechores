@@ -93,11 +93,10 @@ export const HeldOrdersPanel = ({ open, onClose, onResume }) => {
             </div>
           ) : (
             held.map((h) => {
-              const itemCount = h.items.reduce((sum, i) => sum + i.quantity, 0);
-              const total = h.items.reduce(
-                (sum, i) => sum + i.unit_price * i.quantity,
-                0,
-              );
+              // A weighed line counts as one item.
+              const itemCount = h.items.reduce((sum, i) => sum + (Number.isInteger(i.quantity) ? i.quantity : 1), 0);
+              const total =
+                h.items.reduce((sum, i) => sum + Math.round(i.unit_price * i.quantity * 100), 0) / 100;
               const heldAgo = Math.floor(
                 (Date.now() - new Date(h.createdAt)) / 60000,
               );

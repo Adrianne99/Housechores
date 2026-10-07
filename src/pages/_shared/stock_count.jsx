@@ -7,7 +7,7 @@ import { AppContext } from "../../context/app_context";
 import { useBranches } from "../../hooks/use_branches";
 import { useProducts } from "../../hooks/use_product_lookup";
 import { queryClient, error_message } from "../../lib/query";
-import { peso } from "../../utils/format";
+import { is_qty, peso, round_qty } from "../../utils/format";
 import { cn } from "../../utils/utils";
 
 export default function StockCount() {
@@ -52,10 +52,11 @@ export default function StockCount() {
       return { ...c, [p._id]: { counted: value, expected: c[p._id]?.expected ?? p.stock_management.current_stock } };
     });
 
-  const entries = Object.entries(counts).filter(([, v]) => Number.isInteger(Number(v.counted)) && Number(v.counted) >= 0);
   const by_id = new Map(products.map((p) => [p._id, p]));
+  // Weighed products are counted in kilos (decimals allowed).
+  const entries = Object.entries(counts).filter(([id, v]) => is_qty(v.counted, !!by_id.get(id)?.sold_by_weight, true));
   const diffs = entries
-    .map(([id, v]) => ({ p: by_id.get(id), diff: Number(v.counted) - v.expected, ...v }))
+    .map(([id, v]) => ({ p: by_id.get(id), diff: round_qty(Number(v.counted) - v.expected), ...v }))
     .filter((d) => d.p && d.diff !== 0);
   const diff_value = diffs.reduce((t, d) => t + Math.round(d.p.pricing.cost_per_unit * 100) * d.diff, 0) / 100;
 
@@ -176,8 +177,8 @@ export default function StockCount() {
                     ref={(el) => (el ? inputs.current.set(p._id, el) : inputs.current.delete(p._id))}
                     type="number"
                     min={0}
-                    step={1}
-                    inputMode="numeric"
+                    step={p.sold_by_weight ? 0.001 : 1}
+                    inputMode={p.sold_by_weight ? "decimal" : "numeric"}
                     value={c?.counted ?? ""}
                     onChange={(e) => set_count(p, e.target.value)}
                     placeholder="Count"

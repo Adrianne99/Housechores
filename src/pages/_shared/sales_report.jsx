@@ -115,6 +115,13 @@ export default function SalesReport() {
               <div className="pt-2">
                 <Row label="Voided" value={`${s.voided.count} · ${peso(s.voided.total)}`} muted={!s.voided.count} />
                 <Row label="Refunds" value={`${s.refunds?.count ?? 0} · −${peso(s.refunds?.total)}`} muted={!s.refunds?.count} />
+                {s.cart_removals && (
+                  <Row
+                    label={`Removed before payment${s.cart_removals.after_total_shown ? ` (${s.cart_removals.after_total_shown} after the total was shown)` : ""}`}
+                    value={`${s.cart_removals.count} · ${peso(s.cart_removals.amount)}`}
+                    muted={!s.cart_removals.count}
+                  />
+                )}
                 <Row label="Net after refunds" value={peso(s.net_after_refunds ?? s.net)} strong />
                 <Row label="First sale" value={time_of(s.first_sale)} />
                 <Row label="Last sale" value={time_of(s.last_sale)} />

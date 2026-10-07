@@ -4,6 +4,8 @@ export const INITIAL_FORM = {
   brand: "",
   category: "",
   unit: "",
+  // Sold by the kilo: stock and sales to the gram (see backend utils/quantity.js).
+  sold_by_weight: false,
   stock_management: {
     current_stock: "",
     reorder_level: "",

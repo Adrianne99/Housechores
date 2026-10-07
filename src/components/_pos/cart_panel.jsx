@@ -1,6 +1,7 @@
 import { Trash2, Plus, Minus, Pause, PackagePlus, Inbox } from "lucide-react";
 import { Button } from "../buttons";
 import { DiscountSection } from "./discount_section";
+import { line_total } from "../../hooks/use_cart";
 
 export const CartPanel = ({
   items,
@@ -74,7 +75,7 @@ export const CartPanel = ({
           <div className="flex flex-col gap-2">
             {items.map((item) => (
               <div
-                key={item.inventory_id}
+                key={item.key}
                 className="bg-gray-50 rounded-xl p-3 hover:bg-gray-100 transition-colors"
               >
                 <div className="flex justify-between items-start gap-2 mb-2">
@@ -90,10 +91,13 @@ export const CartPanel = ({
                     <p className="text-xs text-gray-400">
                       ₱{item.unit_price.toFixed(2)}{" "}
                       {item.unit ? `/ ${item.unit}` : ""}
+                      {item.amount != null && (
+                        <span className="ml-1 text-indigo-500 font-medium">· ₱{item.amount.toFixed(2)} worth</span>
+                      )}
                     </p>
                   </div>
                   <button
-                    onClick={() => removeItem(item.inventory_id)}
+                    onClick={() => removeItem(item.key)}
                     aria-label={`Remove ${item.name}`}
                     className="p-1 rounded-lg hover:bg-red-100 text-gray-300 hover:text-red-500 shrink-0"
                   >
@@ -105,7 +109,7 @@ export const CartPanel = ({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() =>
-                        updateQuantity(item.inventory_id, item.quantity - 1)
+                        updateQuantity(item.key, item.quantity - (item.by_weight ? 0.1 : 1))
                       }
                       aria-label={`Decrease ${item.name}`}
                       className="w-7 h-7 rounded-lg bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 flex items-center justify-center text-gray-600 hover:text-indigo-600"
@@ -114,24 +118,25 @@ export const CartPanel = ({
                     </button>
                     <input
                       type="number"
-                      min={1}
-                      step={1}
-                      inputMode="numeric"
+                      min={item.by_weight ? 0.001 : 1}
+                      step={item.by_weight ? 0.001 : 1}
+                      inputMode={item.by_weight ? "decimal" : "numeric"}
                       aria-label={`Quantity of ${item.name}`}
                       value={item.quantity}
                       onChange={(e) =>
-                        updateQuantity(item.inventory_id, e.target.value)
+                        updateQuantity(item.key, e.target.value)
                       }
-                      className="w-12 text-center text-sm font-medium border border-gray-200 rounded-lg py-1 outline-none focus:border-indigo-400 bg-white"
+                      className={`${item.by_weight ? "w-16" : "w-12"} text-center text-sm font-medium border border-gray-200 rounded-lg py-1 outline-none focus:border-indigo-400 bg-white`}
                     />
+                    {item.by_weight && <span className="text-xs text-gray-400">{item.unit || "kg"}</span>}
                     <button
                       onClick={() =>
-                        updateQuantity(item.inventory_id, item.quantity + 1)
+                        updateQuantity(item.key, item.quantity + (item.by_weight ? 0.1 : 1))
                       }
                       aria-label={`Increase ${item.name}`}
                       disabled={
                         Number.isFinite(item.available_stock) &&
-                        item.quantity >= item.available_stock
+                        item.quantity * (item.units_per ?? 1) >= item.available_stock
                       }
                       className="w-7 h-7 rounded-lg bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 flex items-center justify-center text-gray-600 hover:text-indigo-600 disabled:opacity-40"
                     >
@@ -139,7 +144,7 @@ export const CartPanel = ({
                     </button>
                   </div>
                   <p className="text-sm font-bold text-gray-900 tabular-nums">
-                    ₱{(item.unit_price * item.quantity).toFixed(2)}
+                    ₱{line_total(item).toFixed(2)}
                   </p>
                 </div>
               </div>

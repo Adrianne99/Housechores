@@ -21,6 +21,7 @@ import { EditableStock } from "./editable_stock";
 import { EditableSupplier } from "./editable_supplier";
 import { EditableCategory } from "./editable_category";
 import { EditablePrice } from "./editable_price";
+import { EditableSelling } from "./editable_selling";
 
 // `change` (a number, percent) and `hint` are optional. When `change`
 // is provided we render a colored up/down trend badge; otherwise the
@@ -407,6 +408,7 @@ export const StocksCard = ({
             productId={product._id}
             name={product.name}
             cost={product.pricing?.cost_per_unit}
+            by_weight={product.sold_by_weight}
             stock_management={product.stock_management}
             onUpdate={(updated) => {
               updateProduct(product._id, {
@@ -467,10 +469,13 @@ export const StocksCard = ({
         </td>
       )}
       {p.show?.selling_price && (
-        <td className="px-4 py-3 whitespace-nowrap">
-          <span className="text-sm font-medium text-gray-900">
-            {formatPrice(product.pricing?.selling_price)}
-          </span>
+        <td className="px-4 py-3">
+          <EditableSelling
+            product={product}
+            editable={!!p.edit?.selling_options}
+            formatPrice={formatPrice}
+            onUpdate={(changes) => updateProduct(product._id, changes)}
+          />
         </td>
       )}
       {p.show_actions && (

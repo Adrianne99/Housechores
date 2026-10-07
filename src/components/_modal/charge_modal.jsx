@@ -11,6 +11,7 @@ import { cn } from "../../utils/utils";
 import { enqueue, is_network_error, new_client_ref } from "../../lib/offline_sales";
 import { useStoreSettings } from "../../hooks/use_settings";
 import { DEFAULT_PAYMENT_METHODS, method_key } from "../../utils/format";
+import { line_total, units_of } from "../../hooks/use_cart";
 
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000];
 
@@ -32,10 +33,12 @@ const offline_order = (payload, items, totals, discount, userData) => ({
   branch: userData?.branch && typeof userData.branch === "object" ? userData.branch : null,
   items: items.map((i) => ({
     inventory: i.is_custom ? null : i.inventory_id,
-    product_snapshot: { name: i.name },
+    product_snapshot: { name: i.name, unit: i.unit },
     quantity: i.quantity,
+    by_weight: i.by_weight || undefined,
+    base_qty: units_of(i),
     unit_price: i.unit_price,
-    subtotal: Math.round(i.unit_price * i.quantity * 100) / 100,
+    subtotal: line_total(i),
   })),
   subtotal: totals.subtotal,
   discount_amount: totals.discount_amount ?? 0,
@@ -98,7 +101,12 @@ const ChargeModalBody = ({ onClose, total, subtotal, totals, items, discount, br
       items: items.map((i) =>
         i.is_custom
           ? { is_custom: true, name: i.name, brand: i.brand, unit: i.unit, unit_price: i.unit_price, quantity: i.quantity }
-          : { inventory_id: i.inventory_id, quantity: i.quantity },
+          : {
+              inventory_id: i.inventory_id,
+              pack_id: i.pack_id || undefined,
+              // "₱20 worth": the server charges exactly this amount.
+              ...(i.amount != null ? { amount: i.amount } : { quantity: i.quantity }),
+            },
       ),
       discount: discount || undefined,
       approval: needs_pin ? { pin } : undefined,

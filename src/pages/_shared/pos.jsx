@@ -13,6 +13,7 @@ import { BarcodeScanner } from "../../components/_pos/barcode_scanner";
 import { HoldModal } from "../../components/_modal/hold_modal";
 import { HeldOrdersPanel } from "../../components/_pos/held_orders";
 import { CustomItemModal } from "../../components/_modal/custom_item";
+import { WeighDialog } from "../../components/_pos/weigh_dialog";
 import { useCart } from "../../hooks/use_cart";
 import { useProductLookup, apply_sale_to_products } from "../../hooks/use_product_lookup";
 import { useDrawer, apply_sale_to_drawer } from "../../hooks/use_drawer";
@@ -24,23 +25,9 @@ import { CloudOff, RefreshCw, Store, Wallet } from "lucide-react";
 import { useBranches } from "../../hooks/use_branches";
 import { useOfflineSales } from "../../hooks/use_settings";
 import { discard, set_offline_user, sync } from "../../lib/offline_sales";
+import { report_removal } from "../../lib/cart_removals";
 
 export default function POSPage() {
-  const {
-    items,
-    discount,
-    addItem,
-    addCustomItem,
-    updateQuantity,
-    removeItem,
-    clearCart,
-    applyDiscount,
-    clearDiscount,
-    loadFromHeld,
-    totals,
-    isEmpty,
-  } = useCart();
-
   const searchInputRef = useRef(null);
   const { userData } = useContext(AppContext);
   const is_admin = userData?.role === "admin";
@@ -48,6 +35,26 @@ export default function POSPage() {
   const branches = useBranches({ enabled: is_admin });
   const [branchChoice, setBranchChoice] = useState("");
   const branch = is_admin ? branchChoice || branches[0]?._id || "" : undefined;
+
+  // Items taken out before payment are reported (drawer reading, Activity Log).
+  const onRemoved = useCallback((removal) => report_removal({ ...removal, branch }), [branch]);
+  const {
+    items,
+    discount,
+    addItem,
+    addWeighed,
+    addCustomItem,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    discardCart,
+    markTotalShown,
+    applyDiscount,
+    clearDiscount,
+    loadFromHeld,
+    totals,
+    isEmpty,
+  } = useCart({ onRemoved });
   const { allProducts, findByBarcode, search, loading } = useProductLookup(branch, { enabled: !is_admin || !!branch });
   const offline = useOfflineSales();
   set_offline_user(userData?._id);
@@ -67,6 +74,15 @@ export default function POSPage() {
   const [scanError, setScanError] = useState(null);
   const [holdingLoading, setHoldingLoading] = useState(false);
   const [resumedFromId, setResumedFromId] = useState(null);
+  // Product sold by weight waiting for its kilos / peso amount.
+  const [weighing, setWeighing] = useState(null);
+
+  // Grid, search and scanner all add through here: pieces and packs go
+  // straight in, weighed products ask for the weight first.
+  const pick = useCallback(
+    (product, pack = null) => (product.sold_by_weight ? setWeighing(product) : addItem(product, pack)),
+    [addItem],
+  );
 
   // Held-order badge reads the shared cached list.
   const { data: heldOrders = [] } = useHeldOrders();
@@ -104,16 +120,16 @@ export default function POSPage() {
 
   const handleBarcodeDetected = useCallback(
     (barcode) => {
-      const product = findByBarcode(barcode);
-      if (product) {
-        addItem(product);
+      const found = findByBarcode(barcode);
+      if (found) {
+        pick(found.product, found.pack);
         setShowScanner(false);
         setScanError(null);
       } else {
         setScanError(`No product found for barcode: ${barcode}`);
       }
     },
-    [findByBarcode, addItem],
+    [findByBarcode, pick],
   );
 
   // ─── Hold cart ──────────────────────────────────────────
@@ -126,6 +142,7 @@ export default function POSPage() {
           note,
           items: items.map((i) => ({
             inventory_id: i.is_custom ? null : i.inventory_id,
+            pack_id: i.pack_id || undefined,
             is_custom: i.is_custom,
             barcode: i.barcode,
             name: i.name,
@@ -155,9 +172,16 @@ export default function POSPage() {
   // Clearing the cart also forgets which held order it came from, so a
   // later unrelated sale doesn't delete that held order.
   const handleClearCart = useCallback(() => {
-    clearCart();
+    discardCart();
     setResumedFromId(null);
-  }, [clearCart]);
+  }, [discardCart]);
+
+  // The customer sees the total once Charge opens; removals after that
+  // are flagged to supervisors.
+  const openCharge = useCallback(() => {
+    markTotalShown();
+    setShowCharge(true);
+  }, [markTotalShown]);
 
   // ─── Resume held order ──────────────────────────────────
   const handleResumeHeld = useCallback(
@@ -168,11 +192,12 @@ export default function POSPage() {
       ) {
         return false;
       }
+      if (!isEmpty) discardCart();
       loadFromHeld(held_order.items);
       setResumedFromId(id);
       return true;
     },
-    [loadFromHeld, isEmpty],
+    [loadFromHeld, discardCart, isEmpty],
   );
 
   const anyModalOpen =
@@ -181,6 +206,7 @@ export default function POSPage() {
     showHoldModal ||
     showHeldPanel ||
     showCustomItem ||
+    !!weighing ||
     !!completedOrder;
 
   // ─── Global keyboard shortcuts ──────────────────────────
@@ -211,7 +237,7 @@ export default function POSPage() {
         case "F9": // charge
           if (!isEmpty) {
             e.preventDefault();
-            setShowCharge(true);
+            openCharge();
           }
           break;
         default:
@@ -220,7 +246,7 @@ export default function POSPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isEmpty, anyModalOpen, canAddCustom]);
+  }, [isEmpty, anyModalOpen, canAddCustom, openCharge]);
 
   if (loading && allProducts.length === 0 && (!is_admin || branch)) {
     return (
@@ -320,7 +346,7 @@ export default function POSPage() {
                   inputRef={searchInputRef}
                   findByBarcode={findByBarcode}
                   search={search}
-                  onProductPicked={addItem}
+                  onProductPicked={pick}
                 />
               </div>
               <button
@@ -345,7 +371,7 @@ export default function POSPage() {
           <ProductGrid
             products={allProducts}
             cartItems={items}
-            onPick={addItem}
+            onPick={pick}
           />
 
           {/* Keyboard shortcuts */}
@@ -365,7 +391,7 @@ export default function POSPage() {
             applyDiscount={applyDiscount}
             clearDiscount={clearDiscount}
             heldCount={heldCount}
-            onCharge={() => setShowCharge(true)}
+            onCharge={openCharge}
             onHold={() => setShowHoldModal(true)}
             onShowHeld={() => setShowHeldPanel(true)}
             onAddCustom={canAddCustom ? () => setShowCustomItem(true) : undefined}
@@ -413,6 +439,8 @@ export default function POSPage() {
         onClose={() => setShowHeldPanel(false)}
         onResume={handleResumeHeld}
       />
+
+      <WeighDialog product={weighing} onAdd={addWeighed} onClose={() => setWeighing(null)} />
 
       <CustomItemModal
         open={showCustomItem}
